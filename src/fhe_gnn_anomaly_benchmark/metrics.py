@@ -3,6 +3,61 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
+from typing import Iterable
+
+
+@dataclass(frozen=True, slots=True)
+class BinaryMetrics:
+    """Binary anomaly-detection metrics with anomaly label ``1``."""
+
+    recall: float
+    f1: float
+    accuracy: float
+    true_positives: int
+    false_positives: int
+    false_negatives: int
+    true_negatives: int
+
+
+def binary_metrics(
+    labels: Iterable[int],
+    scores: Iterable[float],
+    *,
+    threshold: float = 0.5,
+) -> BinaryMetrics:
+    """Calculate Recall, F1, and Accuracy for binary anomaly scores."""
+
+    expected = list(labels)
+    observed = list(scores)
+    if not expected:
+        raise ValueError("labels must not be empty")
+    if len(expected) != len(observed):
+        raise ValueError("labels and scores must have the same length")
+    if any(label not in (0, 1) for label in expected):
+        raise ValueError("labels must contain only 0 and 1")
+    if not math.isfinite(threshold) or not 0 <= threshold <= 1:
+        raise ValueError("threshold must lie in [0, 1]")
+    if any(not math.isfinite(score) or score < 0 or score > 1 for score in observed):
+        raise ValueError("scores must lie in [0, 1]")
+
+    predicted = [int(score >= threshold) for score in observed]
+    tp = int(sum(bool(label == 1 and pred == 1) for label, pred in zip(expected, predicted, strict=True)))
+    fp = int(sum(bool(label == 0 and pred == 1) for label, pred in zip(expected, predicted, strict=True)))
+    fn = int(sum(bool(label == 1 and pred == 0) for label, pred in zip(expected, predicted, strict=True)))
+    tn = int(sum(bool(label == 0 and pred == 0) for label, pred in zip(expected, predicted, strict=True)))
+    recall = tp / (tp + fn) if tp + fn else 0.0
+    precision = tp / (tp + fp) if tp + fp else 0.0
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+    return BinaryMetrics(
+        recall=float(recall),
+        f1=float(f1),
+        accuracy=float((tp + tn) / len(expected)),
+        true_positives=tp,
+        false_positives=fp,
+        false_negatives=fn,
+        true_negatives=tn,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,7 +98,7 @@ def quality_retention(
         recall_plaintext_full,
         f1_plaintext_full,
     )
-    if any(value < 0 or value > 1 for value in values):
+    if any(not math.isfinite(value) or value < 0 or value > 1 for value in values):
         raise ValueError("quality metrics must lie in [0, 1]")
     if recall_plaintext_full == 0 or f1_plaintext_full == 0:
         raise ValueError("full-plaintext recall and F1 must be positive")

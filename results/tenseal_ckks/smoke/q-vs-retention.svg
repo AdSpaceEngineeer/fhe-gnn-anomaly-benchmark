@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="440" viewBox="0 0 720 440">
+<rect width="100%" height="100%" fill="white"/>
+<text x="360" y="24" text-anchor="middle" font-family="sans-serif" font-size="18">Identifier Truncation Robustness Q(k)</text>
+<line x1="80" y1="40" x2="80" y2="370" stroke="#333"/>
+<line x1="80" y1="370" x2="690" y2="370" stroke="#333"/>
+<text x="80.00" y="394" text-anchor="middle" font-family="sans-serif" font-size="12">0.0</text>
+<text x="68" y="374.00" text-anchor="end" font-family="sans-serif" font-size="12">0.00</text>
+<text x="202.00" y="394" text-anchor="middle" font-family="sans-serif" font-size="12">0.2</text>
+<text x="68" y="308.00" text-anchor="end" font-family="sans-serif" font-size="12">0.20</text>
+<text x="324.00" y="394" text-anchor="middle" font-family="sans-serif" font-size="12">0.4</text>
+<text x="68" y="242.00" text-anchor="end" font-family="sans-serif" font-size="12">0.40</text>
+<text x="446.00" y="394" text-anchor="middle" font-family="sans-serif" font-size="12">0.6</text>
+<text x="68" y="176.00" text-anchor="end" font-family="sans-serif" font-size="12">0.60</text>
+<text x="568.00" y="394" text-anchor="middle" font-family="sans-serif" font-size="12">0.8</text>
+<text x="68" y="110.00" text-anchor="end" font-family="sans-serif" font-size="12">0.80</text>
+<text x="690.00" y="394" text-anchor="middle" font-family="sans-serif" font-size="12">1.0</text>
+<text x="68" y="44.00" text-anchor="end" font-family="sans-serif" font-size="12">1.00</text>
+<polyline points="218.64,40.00 329.55,40.00 468.18,40.00 579.09,40.00 690.00,40.00" fill="none" stroke="#2563eb" stroke-width="3"/>
+<circle cx="218.64" cy="40.00" r="5" fill="#dc2626"/>
+<text x="218.64" y="30.00" text-anchor="middle" font-family="sans-serif" font-size="11">k=5; Q=1.000</text>
+<circle cx="329.55" cy="40.00" r="5" fill="#dc2626"/>
+<text x="329.55" y="30.00" text-anchor="middle" font-family="sans-serif" font-size="11">k=9; Q=1.000</text>
+<circle cx="468.18" cy="40.00" r="5" fill="#dc2626"/>
+<text x="468.18" y="30.00" text-anchor="middle" font-family="sans-serif" font-size="11">k=14; Q=1.000</text>
+<circle cx="579.09" cy="40.00" r="5" fill="#dc2626"/>
+<text x="579.09" y="30.00" text-anchor="middle" font-family="sans-serif" font-size="11">k=18; Q=1.000</text>
+<circle cx="690.00" cy="40.00" r="5" fill="#dc2626"/>
+<text x="690.00" y="30.00" text-anchor="middle" font-family="sans-serif" font-size="11">k=22; Q=1.000</text>
+<text x="385.00" y="422" text-anchor="middle" font-family="sans-serif" font-size="14">Realized retention k/L</text>
+<text x="20" y="205.00" transform="rotate(-90 20 205.00)" text-anchor="middle" font-family="sans-serif" font-size="14">Q(k)</text>
+</svg>

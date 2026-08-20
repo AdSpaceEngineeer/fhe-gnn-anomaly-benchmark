@@ -4,69 +4,147 @@
   "title": "FHE GNN anomaly benchmark result",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "run", "cryptography", "quality", "performance"],
+  "required": ["schema_version", "conformance", "run", "model", "cryptography", "quality", "performance"],
   "properties": {
-    "schema_version": {"const": "0.1.0"},
+    "schema_version": {"const": "0.4.0"},
+    "conformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["is_fhe", "meets_128_bit_security_target", "eligible_for_fhe_comparison", "warning"],
+      "properties": {
+        "is_fhe": {"type": "boolean"},
+        "meets_128_bit_security_target": {"type": "boolean"},
+        "eligible_for_fhe_comparison": {"type": "boolean"},
+        "warning": {"type": ["string", "null"]}
+      }
+    },
     "run": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["submission", "dataset", "seed", "retained_characters", "full_length", "num_runs"],
+      "required": [
+        "submission", "implementation", "dataset", "run_index", "num_runs", "seed",
+        "batch_size", "subgraph_nodes", "subgraph_edges", "retention_requested",
+        "retained_characters", "full_length", "retention_realized", "hardware"
+      ],
       "properties": {
         "submission": {"type": "string", "minLength": 1},
+        "implementation": {"type": "string", "minLength": 1},
         "dataset": {"type": "string", "minLength": 1},
+        "run_index": {"type": "integer", "minimum": 1},
+        "num_runs": {"type": "integer", "minimum": 1},
         "seed": {"type": "integer"},
+        "batch_size": {"type": "integer", "minimum": 1},
+        "subgraph_nodes": {"type": "integer", "minimum": 1},
+        "subgraph_edges": {"type": "integer", "minimum": 0},
+        "retention_requested": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
         "retained_characters": {"type": "integer", "minimum": 2},
         "full_length": {"type": "integer", "minimum": 2},
-        "num_runs": {"type": "integer", "minimum": 1},
-        "hardware": {"type": "string"},
-        "software": {"type": "string"}
+        "retention_realized": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "hardware": {
+          "type": "object",
+          "additionalProperties": {"type": "string"},
+          "required": ["platform", "machine", "processor", "python"]
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "adapter", "artifact", "sha256", "recommended_baseline"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "adapter": {"type": "string", "minLength": 1},
+        "artifact": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "recommended_baseline": {"type": "boolean"}
       }
     },
     "cryptography": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["scheme", "parameters", "claimed_security_bits"],
+      "required": ["scheme", "parameters", "claimed_security_bits", "key_policy", "additional_leakage"],
       "properties": {
         "scheme": {"type": "string", "minLength": 1},
         "parameters": {"type": "object"},
-        "claimed_security_bits": {"type": "integer", "minimum": 1},
+        "claimed_security_bits": {"type": "integer", "minimum": 0},
+        "key_policy": {"enum": ["reused", "ephemeral_per_batch"]},
         "additional_leakage": {"type": "array", "items": {"type": "string"}}
       }
     },
     "quality": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["recall_encrypted", "f1_encrypted", "accuracy_encrypted", "recall_plaintext_full", "f1_plaintext_full", "q"],
+      "required": [
+        "protected", "plaintext_full", "plaintext_truncated", "q", "threshold",
+        "max_abs_score_error_vs_plaintext_truncated",
+        "mean_abs_score_error_vs_plaintext_truncated"
+      ],
       "properties": {
-        "recall_encrypted": {"type": "number", "minimum": 0, "maximum": 1},
-        "f1_encrypted": {"type": "number", "minimum": 0, "maximum": 1},
-        "accuracy_encrypted": {"type": "number", "minimum": 0, "maximum": 1},
-        "recall_plaintext_full": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
-        "f1_plaintext_full": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
-        "recall_plaintext_truncated": {"type": "number", "minimum": 0, "maximum": 1},
-        "f1_plaintext_truncated": {"type": "number", "minimum": 0, "maximum": 1},
-        "q": {"type": "number", "minimum": 0}
+        "protected": {"$ref": "#/$defs/binaryMetrics"},
+        "plaintext_full": {"$ref": "#/$defs/binaryMetrics"},
+        "plaintext_truncated": {"$ref": "#/$defs/binaryMetrics"},
+        "q": {"type": ["number", "null"], "minimum": 0},
+        "max_abs_score_error_vs_plaintext_truncated": {"type": "number", "minimum": 0},
+        "mean_abs_score_error_vs_plaintext_truncated": {"type": "number", "minimum": 0},
+        "threshold": {"type": "number", "minimum": 0, "maximum": 1}
       }
     },
     "performance": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["latency_seconds", "throughput_per_second", "peak_ram_bytes", "storage_bytes", "communication_bytes", "stage_seconds"],
+      "required": [
+        "online_latency_seconds", "initialization_seconds", "throughput_targets_per_second",
+        "peak_ram_bytes", "peak_ram_by_stage_bytes", "storage_bytes", "artifact_bytes",
+        "communication_bytes", "communication_by_direction_bytes", "stage_seconds",
+        "harness_instance_generation_seconds", "key_generation_seconds", "evaluation_key_bytes",
+        "evaluation_key_upload_seconds", "key_rotation_seconds",
+        "amortized_key_overhead_seconds_per_target"
+      ],
       "properties": {
-        "latency_seconds": {"type": "number", "minimum": 0},
-        "throughput_per_second": {"type": "number", "minimum": 0},
+        "online_latency_seconds": {"type": "number", "minimum": 0},
+        "initialization_seconds": {"type": "number", "minimum": 0},
+        "throughput_targets_per_second": {"type": "number", "minimum": 0},
         "peak_ram_bytes": {"type": "integer", "minimum": 0},
+        "peak_ram_by_stage_bytes": {"$ref": "#/$defs/nonNegativeIntegerMap"},
         "storage_bytes": {"type": "integer", "minimum": 0},
+        "artifact_bytes": {"$ref": "#/$defs/nonNegativeIntegerMap"},
         "communication_bytes": {"type": "integer", "minimum": 0},
-        "stage_seconds": {
-          "type": "object",
-          "additionalProperties": {"type": "number", "minimum": 0}
-        },
+        "communication_by_direction_bytes": {"$ref": "#/$defs/nonNegativeIntegerMap"},
+        "stage_seconds": {"$ref": "#/$defs/nonNegativeNumberMap"},
+        "harness_instance_generation_seconds": {"type": "number", "minimum": 0},
         "key_generation_seconds": {"type": "number", "minimum": 0},
         "evaluation_key_bytes": {"type": "integer", "minimum": 0},
         "evaluation_key_upload_seconds": {"type": "number", "minimum": 0},
-        "key_rotation_seconds": {"type": "number", "minimum": 0}
+        "key_rotation_seconds": {"type": ["number", "null"], "minimum": 0},
+        "amortized_key_overhead_seconds_per_target": {"type": "number", "minimum": 0}
       }
+    }
+  },
+  "$defs": {
+    "binaryMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recall", "f1", "accuracy", "true_positives", "false_positives",
+        "false_negatives", "true_negatives"
+      ],
+      "properties": {
+        "recall": {"type": "number", "minimum": 0, "maximum": 1},
+        "f1": {"type": "number", "minimum": 0, "maximum": 1},
+        "accuracy": {"type": "number", "minimum": 0, "maximum": 1},
+        "true_positives": {"type": "integer", "minimum": 0},
+        "false_positives": {"type": "integer", "minimum": 0},
+        "false_negatives": {"type": "integer", "minimum": 0},
+        "true_negatives": {"type": "integer", "minimum": 0}
+      }
+    },
+    "nonNegativeIntegerMap": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "nonNegativeNumberMap": {
+      "type": "object",
+      "additionalProperties": {"type": "number", "minimum": 0}
     }
   }
 }

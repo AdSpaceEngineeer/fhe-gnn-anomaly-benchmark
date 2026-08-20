@@ -1,0 +1,146 @@
+{
+  "conformance": {
+    "eligible_for_fhe_comparison": true,
+    "is_fhe": true,
+    "meets_128_bit_security_target": true,
+    "warning": null
+  },
+  "cryptography": {
+    "additional_leakage": [
+      "Ciphertext count reveals the already-public inference subgraph node count"
+    ],
+    "claimed_security_bits": 128,
+    "key_policy": "reused",
+    "parameters": {
+      "coeff_mod_bit_sizes": [
+        60,
+        40,
+        40,
+        40,
+        40,
+        60
+      ],
+      "global_scale_bits": 40,
+      "packing": "one encrypted 72-feature identifier histogram per graph node",
+      "poly_modulus_degree": 16384,
+      "security_standard": "HomomorphicEncryption.org 128-bit classical"
+    },
+    "scheme": "CKKS"
+  },
+  "model": {
+    "adapter": "polynomial_message_passing_v1",
+    "artifact": "model.npz",
+    "name": "yelpchi-polynomial-gnn-v1",
+    "recommended_baseline": true,
+    "sha256": "78f0bfa62d4bf88c49b82667596ed8e41ca70ac70ae77a17c1dd9d29954a4337"
+  },
+  "performance": {
+    "amortized_key_overhead_seconds_per_target": 4.988329000072554,
+    "artifact_bytes": {
+      "run_ciphertexts_download": 262310,
+      "run_ciphertexts_upload": 104310696,
+      "run_encrypted_outputs": 0,
+      "run_evaluation_keys": 0,
+      "run_public_keys": 0,
+      "run_rotated_evaluation_keys": 0,
+      "run_server_intermediates": 0,
+      "setup_ciphertexts_download": 0,
+      "setup_ciphertexts_upload": 0,
+      "setup_encrypted_outputs": 0,
+      "setup_evaluation_keys": 179743195,
+      "setup_public_keys": 1316291,
+      "setup_rotated_evaluation_keys": 0,
+      "setup_server_intermediates": 179772561
+    },
+    "communication_by_direction_bytes": {
+      "client_to_server": 285370182,
+      "server_to_client": 262310
+    },
+    "communication_bytes": 285632492,
+    "evaluation_key_bytes": 179743195,
+    "evaluation_key_upload_seconds": 0.3908606000477448,
+    "harness_instance_generation_seconds": 0.9684829999459907,
+    "initialization_seconds": 5.306064300122671,
+    "key_generation_seconds": 4.597468400024809,
+    "key_rotation_seconds": null,
+    "online_latency_seconds": 10.842948300065473,
+    "peak_ram_by_stage_bytes": {
+      "client_decrypt_output": 84414464,
+      "client_encrypt_input": 86474752,
+      "client_key_generation": 970043392,
+      "client_postprocess": 31690752,
+      "client_preprocess_input": 31719424,
+      "server_encrypted_compute": 1367011328,
+      "server_preprocess_model": 32411648,
+      "server_upload_evaluation_key": 32481280
+    },
+    "peak_ram_bytes": 1367011328,
+    "stage_seconds": {
+      "client_decrypt_output": 1.165935100056231,
+      "client_encrypt_input": 4.340651400038041,
+      "client_key_generation": 4.597468400024809,
+      "client_postprocess": 0.30403839994687587,
+      "client_preprocess_input": 0.2769681999925524,
+      "server_encrypted_compute": 4.755355200031772,
+      "server_preprocess_model": 0.3177353000501171,
+      "server_upload_evaluation_key": 0.3908606000477448
+    },
+    "storage_bytes": 465405053,
+    "throughput_targets_per_second": 0.09222583861199096
+  },
+  "quality": {
+    "max_abs_score_error_vs_plaintext_truncated": 3.762154587860778e-09,
+    "mean_abs_score_error_vs_plaintext_truncated": 3.762154587860778e-09,
+    "plaintext_full": {
+      "accuracy": 1.0,
+      "f1": 1.0,
+      "false_negatives": 0,
+      "false_positives": 0,
+      "recall": 1.0,
+      "true_negatives": 0,
+      "true_positives": 1
+    },
+    "plaintext_truncated": {
+      "accuracy": 1.0,
+      "f1": 1.0,
+      "false_negatives": 0,
+      "false_positives": 0,
+      "recall": 1.0,
+      "true_negatives": 0,
+      "true_positives": 1
+    },
+    "protected": {
+      "accuracy": 1.0,
+      "f1": 1.0,
+      "false_negatives": 0,
+      "false_positives": 0,
+      "recall": 1.0,
+      "true_negatives": 0,
+      "true_positives": 1
+    },
+    "q": 1.0,
+    "threshold": 0.6605174127889721
+  },
+  "run": {
+    "batch_size": 1,
+    "dataset": "YelpChi",
+    "full_length": 22,
+    "hardware": {
+      "machine": "AMD64",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+      "python": "3.12.13"
+    },
+    "implementation": "TenSEAL 0.3.16 over Microsoft SEAL",
+    "num_runs": 1,
+    "retained_characters": 22,
+    "retention_realized": 1.0,
+    "retention_requested": 1.0,
+    "run_index": 1,
+    "seed": 2026,
+    "subgraph_edges": 4766,
+    "subgraph_nodes": 99,
+    "submission": "tenseal-ckks-node-packed"
+  },
+  "schema_version": "0.4.0"
+}

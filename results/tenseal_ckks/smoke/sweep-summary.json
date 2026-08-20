@@ -1,0 +1,58 @@
+{
+  "batch_size": 1,
+  "num_runs": 1,
+  "points": [
+    {
+      "communication_bytes_median": 285631832,
+      "full_length": 22,
+      "latency_seconds_median": 10.541129699908197,
+      "q_median": 1.0,
+      "retained_characters": 5,
+      "retention_realized": 0.22727272727272727,
+      "retention_requested": 0.2,
+      "storage_bytes_median": 465403714
+    },
+    {
+      "communication_bytes_median": 285626156,
+      "full_length": 22,
+      "latency_seconds_median": 10.824221799965017,
+      "q_median": 1.0,
+      "retained_characters": 9,
+      "retention_realized": 0.4090909090909091,
+      "retention_requested": 0.4,
+      "storage_bytes_median": 465395708
+    },
+    {
+      "communication_bytes_median": 285622046,
+      "full_length": 22,
+      "latency_seconds_median": 11.07300179998856,
+      "q_median": 1.0,
+      "retained_characters": 14,
+      "retention_realized": 0.6363636363636364,
+      "retention_requested": 0.6,
+      "storage_bytes_median": 465391121
+    },
+    {
+      "communication_bytes_median": 285620702,
+      "full_length": 22,
+      "latency_seconds_median": 11.036488899844699,
+      "q_median": 1.0,
+      "retained_characters": 18,
+      "retention_realized": 0.8181818181818182,
+      "retention_requested": 0.8,
+      "storage_bytes_median": 465386951
+    },
+    {
+      "communication_bytes_median": 285632492,
+      "full_length": 22,
+      "latency_seconds_median": 10.842948300065473,
+      "q_median": 1.0,
+      "retained_characters": 22,
+      "retention_realized": 1.0,
+      "retention_requested": 1.0,
+      "storage_bytes_median": 465405053
+    }
+  ],
+  "retention_policy": "canonical",
+  "schema_version": "0.1.0"
+}
