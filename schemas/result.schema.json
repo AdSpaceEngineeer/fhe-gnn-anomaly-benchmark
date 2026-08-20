@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/AdSpaceEngineeer/fhe-gnn-anomaly-benchmark/schemas/result.schema.json",
+  "title": "FHE GNN anomaly benchmark result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run", "cryptography", "quality", "performance"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["submission", "dataset", "seed", "retained_characters", "full_length", "num_runs"],
+      "properties": {
+        "submission": {"type": "string", "minLength": 1},
+        "dataset": {"type": "string", "minLength": 1},
+        "seed": {"type": "integer"},
+        "retained_characters": {"type": "integer", "minimum": 2},
+        "full_length": {"type": "integer", "minimum": 2},
+        "num_runs": {"type": "integer", "minimum": 1},
+        "hardware": {"type": "string"},
+        "software": {"type": "string"}
+      }
+    },
+    "cryptography": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheme", "parameters", "claimed_security_bits"],
+      "properties": {
+        "scheme": {"type": "string", "minLength": 1},
+        "parameters": {"type": "object"},
+        "claimed_security_bits": {"type": "integer", "minimum": 1},
+        "additional_leakage": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recall_encrypted", "f1_encrypted", "accuracy_encrypted", "recall_plaintext_full", "f1_plaintext_full", "q"],
+      "properties": {
+        "recall_encrypted": {"type": "number", "minimum": 0, "maximum": 1},
+        "f1_encrypted": {"type": "number", "minimum": 0, "maximum": 1},
+        "accuracy_encrypted": {"type": "number", "minimum": 0, "maximum": 1},
+        "recall_plaintext_full": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "f1_plaintext_full": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "recall_plaintext_truncated": {"type": "number", "minimum": 0, "maximum": 1},
+        "f1_plaintext_truncated": {"type": "number", "minimum": 0, "maximum": 1},
+        "q": {"type": "number", "minimum": 0}
+      }
+    },
+    "performance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["latency_seconds", "throughput_per_second", "peak_ram_bytes", "storage_bytes", "communication_bytes", "stage_seconds"],
+      "properties": {
+        "latency_seconds": {"type": "number", "minimum": 0},
+        "throughput_per_second": {"type": "number", "minimum": 0},
+        "peak_ram_bytes": {"type": "integer", "minimum": 0},
+        "storage_bytes": {"type": "integer", "minimum": 0},
+        "communication_bytes": {"type": "integer", "minimum": 0},
+        "stage_seconds": {
+          "type": "object",
+          "additionalProperties": {"type": "number", "minimum": 0}
+        },
+        "key_generation_seconds": {"type": "number", "minimum": 0},
+        "evaluation_key_bytes": {"type": "integer", "minimum": 0},
+        "evaluation_key_upload_seconds": {"type": "number", "minimum": 0},
+        "key_rotation_seconds": {"type": "number", "minimum": 0}
+      }
+    }
+  }
+}
