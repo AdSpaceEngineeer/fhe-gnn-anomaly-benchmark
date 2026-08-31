@@ -3,11 +3,11 @@
 An industry-oriented benchmark for graph anomaly detection with FHE-protected
 identifiers such as IBANs, phone numbers, and wallet IDs.
 
-> **Status:** executable research prototype. YelpChi preparation, deterministic
-> identifier injection, a trainable plaintext GNN, staged submission execution,
-> result validation, published YelpChi weights, a measured plaintext baseline,
-> a non-FHE protocol dry run, and a real TenSEAL/CKKS test-drive backend are
-> implemented.
+> **Status:** executable research prototype. The original YelpChi/identifier
+> prototype remains in place. A new plaintext `Scam_List_GCN` baseline has also
+> been added for the revised benchmark direction: synthetic transaction-log
+> scam detection with a simplified GCN attribute autoencoder and three sensitive
+> numeric feature columns.
 
 ## Research question
 
@@ -36,6 +36,42 @@ ML-inference harness.
   storage, directional communication, and key lifecycle overhead.
 - **FHE policy:** implementation- and scheme-agnostic, with a minimum claimed
   security target of 128 bits for comparable FHE submissions.
+
+## Scam_List_GCN plaintext baseline
+
+The next benchmark direction uses a transaction-log-shaped synthetic scam
+dataset rather than raw identifiers. Each transaction is an event node. The
+graph connects events that share a source or destination account within a small
+temporal window. Public features include payment channel and daily transaction
+count. The future FHE-sensitive feature columns are:
+
+- `transfer_amount_z`
+- `source_daily_total_amount_z`
+- `prior_report_count_z`
+
+`Scam_List_GCN` is a simplified DOMINANT-style GCN attribute autoencoder:
+
+```text
+H1    = act(A_norm X W1 + b1)
+Z     = act(A_norm H1 W2 + b2)
+Hd    = act(A_norm Z W3 + b3)
+X_hat = A_norm Hd W4 + b4
+score = mean squared reconstruction error on sensitive feature columns
+```
+
+Training is plaintext and excluded from future FHE timing. The intended
+benchmark flow is to train once, publish the synthetic dataset artifact, frozen
+weights, model checksum, and plaintext Recall/F1/Accuracy baseline, then have
+FHE submissions run the same inference path.
+
+See [the Scam_List_GCN baseline note](docs/scam-list-gcn.md).
+
+Run it directly:
+
+```bash
+python -m pip install -r requirements-scam-list-gcn.txt
+python scripts/scam_list_gcn.py --outdir runs/scam_list_gcn --num-events 100000 --num-accounts 20000 --epochs 80
+```
 
 Training is plaintext and excluded from benchmark timing. For directly
 comparable published results, the repository recommends using the supplied

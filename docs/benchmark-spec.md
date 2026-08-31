@@ -8,6 +8,30 @@ neural network (GNN). The benchmark tests whether identifier-derived features
 can preserve anomaly-event detection utility while remaining hidden from the
 evaluator.
 
+## 1A. Revised Scam_List_GCN direction
+
+The current research direction is to move from encrypted identifiers to a
+clearer transaction-risk workload: encrypted sensitive numeric features inside
+a simplified GCN anomaly detector. The agreed plaintext baseline is
+`Scam_List_GCN`, a DOMINANT-inspired GCN attribute autoencoder trained on a
+synthetic scam transaction log. This baseline treats transactions/interactions
+as event nodes and uses account relationships to construct the graph.
+
+The first benchmark version should protect only one to three feature columns
+that are both sensitive and active in the GCN arithmetic. The selected columns
+are:
+
+- `transfer_amount_z`
+- `source_daily_total_amount_z`
+- `prior_report_count_z`
+
+Raw `source_account` and `destination_account` values are used to build the
+plaintext graph in v1. Encrypting graph topology or private graph construction
+is a later benchmark variant. Training remains out of scope: the benchmark
+should publish the synthetic dataset artifact, frozen model weights, model
+checksum, and plaintext Recall/F1/Accuracy baseline, then require submissions
+to run the same inference path.
+
 ## 2. Motivation and industry grounding
 
 Existing FHE neural-network workloads largely benchmark standalone encrypted
