@@ -1,212 +1,161 @@
 # FHE GNN Anomaly Benchmark
 
-An industry-oriented benchmark for graph anomaly detection with FHE-protected
-identifiers such as IBANs, phone numbers, and wallet IDs.
+## 1. Objective and industry motivation
 
-> **Status:** executable research prototype. The original YelpChi/identifier
-> prototype remains in place. A new plaintext `Scam_List_GCN` baseline has also
-> been added for the revised benchmark direction: synthetic transaction-log
-> scam detection with a simplified GCN attribute autoencoder and three sensitive
-> numeric feature columns.
+This repository scopes a benchmark for fully homomorphic encryption (FHE) in
+graph neural-network inference for scam, crime, and fraud prevention.
 
-## Research question
+The benchmark asks a practical industry question: can a third-party evaluator
+run a graph-based anomaly detector while sensitive transaction-risk fields stay
+encrypted, and can we measure both detection quality and FHE system overhead in
+a repeatable way?
 
-Can encrypted identifier-derived features support useful graph-based fraud,
-scam, and anti-money-laundering inference without exposing identifiers to the
-evaluating server, and what systems cost does that privacy impose?
+The motivation follows the benchmarking style of
+[fhe-benchmarking.github.io](https://fhe-benchmarking.github.io/): report model
+utility together with latency, throughput, memory, storage, communication, and
+key-management cost. The use case is industry-facing because scam and fraud
+detection often depends on linked transaction events, repeated counterparties,
+payment channels, velocity patterns, complaint history, and suspicious local
+neighbourhoods.
 
-The benchmark reuses the *measurement philosophy* of the
-[HomomorphicEncryption.org FHE Benchmarking Suite](https://github.com/fhe-benchmarking/fhe-benchmarking.github.io):
-separate key generation, encryption, encrypted server compute, decryption,
-postprocessing, and quality checks. It does not copy or depend on that suite's
-ML-inference harness.
+## 2. Choice of GCN
 
-## Workload
+The starting point is the attributed-graph anomaly-detection pattern in Ding's
+[GCN_AnomalyDetection_pytorch](https://github.com/kaize0409/GCN_AnomalyDetection_pytorch):
+a graph `Network`, node `Attributes`, and node `Label`, with anomaly detection
+based on reconstructing node attributes.
 
-- **Task:** inference-only binary node anomaly scoring on YelpChi.
-- **Sensitive input:** balanced prefix/suffix encodings of deterministic,
-  synthetic, mod-97-valid GB IBAN-like node identifiers.
-- **Public input:** one-hop graph topology, non-identifier features, published
-  weights, batch shape, and retained identifier length.
-- **GNN:** one-hop mean-aggregation message passing with separate self and
-  neighbour weights, a degree-2 activation `h = z + 0.125 z²`, and a linear
-  anomaly-logit head. Sigmoid and thresholding occur after decryption.
-- **Primary quality:** anomaly Recall and F1. Accuracy is secondary.
-- **Systems measures:** stage and online latency, throughput, peak RAM, artifact
-  storage, directional communication, and key lifecycle overhead.
-- **FHE policy:** implementation- and scheme-agnostic, with a minimum claimed
-  security target of 128 bits for comparable FHE submissions.
+Ma et al. 2023 survey GNN-based fraud detection and motivate graph models for
+fraud settings where relational structure matters. For the benchmark, we choose
+a simplified DOMINANT-style GCN attribute autoencoder because it exposes a
+useful variety of FHE-relevant operations without making v1 too broad.
 
-## Scam_List_GCN plaintext baseline
+`Scam_List_GCN` layers:
 
-The next benchmark direction uses a transaction-log-shaped synthetic scam
-dataset rather than raw identifiers. Each transaction is an event node. The
-graph connects events that share a source or destination account within a small
-temporal window. Public features include payment channel and daily transaction
-count. The future FHE-sensitive feature columns are:
+| Layer / stage | Input | Operation | Output |
+|---|---|---|---|
+| Input feature matrix | Event-node features `X` | Encode raw transaction log into numeric features | `X in R^(N x 8)` |
+| Normalized adjacency | Event graph `A` | Add self-loops and normalize: `D^(-1/2)(A+I)D^(-1/2)` | `A_norm` |
+| Encoder GCN layer 1 | `X`, `A_norm` | `activation(A_norm X W1 + b1)` | `H1` |
+| Encoder GCN layer 2 | `H1`, `A_norm` | `activation(A_norm H1 W2 + b2)` | `Z` |
+| Attribute decoder GCN layer 1 | `Z`, `A_norm` | `activation(A_norm Z W3 + b3)` | `Hd` |
+| Attribute decoder GCN layer 2 | `Hd`, `A_norm` | `A_norm Hd W4 + b4` | `X_hat` |
+| Anomaly scoring | `X`, `X_hat` | Reconstruction error on selected sensitive columns | Event anomaly scores |
 
-- `transfer_amount_z`
-- `source_daily_total_amount_z`
-- `prior_report_count_z`
-
-`Scam_List_GCN` is a simplified DOMINANT-style GCN attribute autoencoder:
+Default activation:
 
 ```text
-H1    = act(A_norm X W1 + b1)
-Z     = act(A_norm H1 W2 + b2)
-Hd    = act(A_norm Z W3 + b3)
-X_hat = A_norm Hd W4 + b4
-score = mean squared reconstruction error on sensitive feature columns
+activation(z) = z + 0.125 z^2
 ```
 
-Training is plaintext and excluded from future FHE timing. The intended
-benchmark flow is to train once, publish the synthetic dataset artifact, frozen
-weights, model checksum, and plaintext Recall/F1/Accuracy baseline, then have
-FHE submissions run the same inference path.
+## 3. Choice of dataset
 
-See [the Scam_List_GCN baseline note](docs/scam-list-gcn.md).
+The v1 dataset is synthetic, transaction-log-shaped, and intentionally close to
+the original GCN PyTorch repository's `Network`, `Attributes`, `Label` format.
+Each transaction is an event node. Edges connect events that share a source or
+destination account within a small temporal window.
 
-Run it directly:
+Example `df.head()`:
+
+| event_id | timestamp | source_account | destination_account | payment_channel | transfer_amount | source_daily_txn_count | source_daily_total_amount | prior_report_count | scam_label |
+|---:|---|---|---|---|---:|---:|---:|---:|---:|
+| 100001 | 2026-01-01 00:00:20+00:00 | ACC-007069 | ACC-008124 | bank_transfer | 9.82 | 1 | 9.82 | 0 | 0 |
+| 100002 | 2026-01-01 00:00:38+00:00 | ACC-019945 | ACC-006841 | wallet | 67.82 | 1 | 67.82 | 0 | 0 |
+| 100003 | 2026-01-01 00:00:40+00:00 | ACC-015803 | ACC-009010 | wallet | 18.14 | 1 | 18.14 | 0 | 0 |
+| 100004 | 2026-01-01 00:00:51+00:00 | ACC-003754 | ACC-001379 | wallet | 79.94 | 1 | 79.94 | 0 | 0 |
+| 100005 | 2026-01-01 00:01:06+00:00 | ACC-015121 | ACC-012577 | bank_transfer | 24.76 | 1 | 24.76 | 0 | 0 |
+
+Fields selected for future encryption:
+
+| Raw field | Encoded feature used by GCN | Why selected |
+|---|---|---|
+| `transfer_amount` | `transfer_amount_z` | Sensitive transaction value; used directly in feature projection and reconstruction scoring |
+| `source_daily_total_amount` | `source_daily_total_amount_z` | Sensitive velocity/behaviour aggregate; used directly in GCN inference |
+| `prior_report_count` | `prior_report_count_z` | Sensitive complaint/investigative history; used directly in GCN inference |
+
+Public fields in v1 include payment channel, source daily transaction count,
+and graph topology. Labels are used only for evaluation.
+
+## 4. GCN performance baseline
+
+Training is plaintext and excluded from future FHE timing. The benchmark should
+publish the generated dataset, graph, split, frozen weights, model checksum,
+threshold, and plaintext baseline metrics. FHE submissions should run the same
+inference path with the same frozen model for direct comparison.
+
+Recent plaintext run:
+
+```text
+events=100000
+edges=740632
+scam_rate=0.0406
+features=8
+sensitive=['transfer_amount_z', 'source_daily_total_amount_z', 'prior_report_count_z']
+```
+
+| Split | Accuracy | Precision | Recall | F1 | ROC-AUC | Average precision |
+|---|---:|---:|---:|---:|---:|---:|
+| Validation | 0.992625 | 0.916928 | 0.900000 | 0.908385 | 0.997928 | 0.957634 |
+| Test | 0.993250 | 0.933419 | 0.897783 | 0.915254 | 0.998697 | 0.970149 |
+
+Validation-selected threshold: `4.344190838049405`.
+
+To reproduce the plaintext baseline:
 
 ```bash
 python -m pip install -r requirements-scam-list-gcn.txt
 python scripts/scam_list_gcn.py --outdir runs/scam_list_gcn --num-events 100000 --num-accounts 20000 --epochs 80
 ```
 
-Training is plaintext and excluded from benchmark timing. For directly
-comparable published results, the repository recommends using the supplied
-model bundle, weights, checksum, graph instance, split, identifier seed, and
-decision threshold as-is. A differently trained compatible model can instead
-be registered as a bundle; the harness automatically evaluates it and records
-its checksum so the result is clearly identified.
+## 5. Benchmark metrics
 
-## Published baseline
+Model performance metrics:
 
-The recommended bundle is [the YelpChi model manifest](baselines/yelpchi/model.json),
-which resolves to `model.npz` with
-SHA-256 `78f0bfa62d4bf88c49b82667596ed8e41ca70ac70ae77a17c1dd9d29954a4337`.
-On the 18,384-node test split, its full-identifier plaintext baseline is Recall
-`0.597305`, F1 `0.522422`, and Accuracy `0.841275`. See the
-[baseline report and truncation sweep](baselines/yelpchi/README.md).
+- Anomaly Recall and Anomaly F1 as primary metrics.
+- Accuracy as a secondary metric because scam/fraud data is imbalanced.
+- ROC-AUC and average precision as diagnostics.
+- Maximum and mean score error versus plaintext frozen-model inference.
 
-Every result records the model name, adapter, artifact hash, quality metrics,
-and systems metrics.
+FHE overhead metrics:
 
-## Identifier Truncation Robustness
+- Latency and throughput for single and batch inference.
+- Peak RAM during encryption, encrypted compute, and decryption.
+- Storage for public keys, evaluation keys, ciphertexts, intermediate values,
+  and encrypted outputs.
+- Communication complexity for client-to-server uploads and server-to-client
+  result payloads.
+- Key generation time, evaluation-key size, evaluation-key upload time,
+  rotation cost, and amortised key overhead per batch.
 
-For full identifier length `L` and total retained prefix/suffix characters `k`:
+Draft operation table for the future FHE path:
 
-```text
-Q(k) = min(Recall_protected(k) / Recall_plaintext(L),
-           F1_protected(k)     / F1_plaintext(L))
-```
+| Increasing Overhead | Ciphertext Operation | Role in GCN | Equation | Operation to Benchmark | Adapter method |
+|---:|---|---|---|---|---|
+| 1 | Ciphertext-plaintext addition | Merge encrypted and public feature paths | `Enc(X_s W_s) + X_p W_p` | Add plaintext tensor to ciphertext tensor | `add_plain(ct, pt)` |
+| 2 | Ciphertext-ciphertext addition | Neighbor aggregation and score reduction | `sum_j c_ij Enc(h_j)`, `sum_m Enc(e_im^2)` | Add ciphertext tensors | `add(ct1, ct2)` |
+| 3 | Ciphertext-plaintext scalar multiplication | Apply normalized graph weights | `c_ij Enc(h_j)` | Multiply ciphertext by plaintext scalar | `mul_plain(ct, pt)` |
+| 4 | Ciphertext-plaintext matrix multiplication | Encoder and decoder projection | `Enc(X_s) W_s`, `Enc(H) W` | Multiply ciphertext tensor by plaintext weight matrix | `matmul_plain(ct, W)` |
+| 5 | Ciphertext-ciphertext subtraction | Reconstruction difference | `Enc(X_s) - Enc(X_hat_s)` | Subtract ciphertext tensors | `sub(ct1, ct2)` |
+| 6 | Ciphertext-ciphertext multiplication | Squared reconstruction error | `Enc(e)^2` | Multiply ciphertext by ciphertext | `square(ct)` or `mul(ct1, ct2)` |
+| 7 | Polynomial or LUT nonlinear approximation | GCN activation under FHE | `p_sigma(Enc(Z))` | Apply encrypted activation approximation | `activation(ct, kind="poly_relu")` |
 
-Requested retention levels are `{0.2, 0.4, 0.6, 0.8, 1.0}`. Because `k` is an
-integer, every result records both the requested fraction and realized `k/L`.
-The `sweep` command runs all five by default and writes summary JSON plus an SVG
-plot. User-supplied points are permitted as supplemental experiments. The
-benchmark reports Q(k) with latency, storage, and communication rather than
-declaring a universal quality-loss threshold.
+## 6. Schemes, methods, and harnesses
 
-The YelpChi profile fixes `L=22`. The general harness accepts equal-length
-alphanumeric identifiers from 2 through 64 characters; a new profile is needed
-outside that bound so resource growth remains explicit.
+Reserved for future implementation.
 
-## Installation and commands
+The eventual benchmark should allow FHE engineers to plug in their own scheme,
+parameters, polynomial or LUT activation strategy, packing method, and execution
+harness while keeping the dataset, graph, model weights, checksum, and inference
+semantics fixed.
 
-```bash
-python -m pip install -e ".[yelpchi]"
-
-# YelpChi.zip is external. It can be read directly without extraction.
-# Canonical source: https://github.com/safe-graph/DGFraud/tree/master/dataset
-fhe-gnn-benchmark prepare-yelpchi /path/to/YelpChi.zip ./prepared/yelpchi
-
-# Reproducing training is optional verification, not part of FHE comparison.
-fhe-gnn-benchmark evaluate-baseline ./prepared/yelpchi \
-  ./baselines/yelpchi/model.json ./reproduced-baseline.json
-
-# Register separately trained weights that use the built-in GNN adapter.
-fhe-gnn-benchmark bundle-model ./my-model/model.npz ./my-model/model.json \
-  --name my-compatible-gnn
-
-# This bundled submission is only a protocol test and provides no privacy.
-fhe-gnn-benchmark run \
-  submissions/plaintext_reference/submission.json \
-  ./prepared/yelpchi ./baselines/yelpchi/model.json ./results \
-  --retention 0.4 --batch-size 100 --num-runs 3
-
-fhe-gnn-benchmark validate ./results/measurements/batch-100/k-9/results-1.json
-
-# Run the default five retention points and generate Q(k) JSON/SVG.
-fhe-gnn-benchmark sweep \
-  submissions/plaintext_reference/submission.json \
-  ./prepared/yelpchi ./baselines/yelpchi/model.json ./sweep-results \
-  --batch-size 100 --num-runs 3
-
-# Verify that result files use the same declared workload.
-fhe-gnn-benchmark validate-comparison result-from-scheme-a.json result-from-scheme-b.json
-```
-
-For the optional real CKKS backend, install `.[tenseal]` and replace the
-submission manifest above with `submissions/tenseal_ckks/submission.json`.
-Its checked-in batch-1 smoke results are under `results/tenseal_ckks/smoke/`.
-
-The standard proposed target-batch variants are `1`, `100`, `1000`, and
-`10000`, subject to final YelpChi profiling. A batch instance contains its
-targets plus their complete incoming one-hop context, so inference preserves
-the frozen one-layer GNN semantics. Primary Recall/F1/Accuracy comparisons use
-the complete 18,384-node test split (`--batch-size 18384`); quality numbers from
-the single-target latency case are diagnostic only.
-
-## Submission boundary
-
-A `submission.json` maps language-neutral stage names to argument-array
-commands. The harness executes commands without a shell and independently
-measures wall time and fixed artifact paths. A stage may write the JSON file at
-`FHE_BENCH_STAGE_REPORT` to report peak RAM and internal timing.
-
-Key policy is explicit:
-
-- `reused`: initial key setup is amortised across repeated runs.
-- `ephemeral_per_batch`: key rotation and rotated evaluation-key upload stages
-  are mandatory and measured before every run after the first.
-
-See [the specification](docs/benchmark-spec.md),
-[submission contract](docs/submission-contract.md), and
-[result schema](schemas/result.schema.json).
-
-## Repository layout
+## Current repository contents
 
 ```text
-docs/          Benchmark specification and executable contract
-baselines/     Published model bundle and measured plaintext quality
-schemas/       Result schema v0.4
-src/           Dataset, identifier, model, harness, metrics, and CLI code
-submissions/   Plaintext protocol exerciser and TenSEAL/CKKS backend
-results/       Small checked-in test-drive reports (not ciphertext artifacts)
-tests/         Unit and end-to-end subprocess tests
+README.md                         Six-section project overview
+docs/benchmark-spec.md            Technical scope matching this README
+docs/scam-list-gcn.md             Supporting detail for dataset/model baseline
+docs/schemes-methods-harnesses.md Reserved placeholder for FHE implementation work
+scripts/scam_list_gcn.py          Synthetic data + Scam_List_GCN baseline
+requirements-scam-list-gcn.txt    Dependencies for the baseline script
+LICENSE                           Apache-2.0 license
 ```
-
-## Evidence base
-
-- [IMDA–Mastercard FHE cross-border financial-crime POC](https://www.imda.gov.sg/-/media/imda/files/programme/pet-sandbox/imda-pet-sandbox--case-study--mastercard.pdf)
-- [IBM–Intesa Sanpaolo encrypted transaction-validation prototype](https://www.ibm.com/case-studies/blog/intesa-sanpaolo-ibm-secure-digital-transactions-fhe)
-- [UK government PET use-case repository: AUSTRAC, Duality, and Enveil](https://www.gov.uk/guidance/repository-of-privacy-enhancing-technologies-pets-use-cases/finance-and-insurance)
-- [NVIDIA card–merchant GNN fraud workflow](https://developer.nvidia.com/blog/optimizing-fraud-detection-in-financial-services-with-graph-neural-networks-and-nvidia-gpus/)
-- [CARE-GNN paper and YelpChi reference implementation](https://github.com/YingtongDou/CARE-GNN)
-- [Systematic review of GNNs for financial fraud detection](https://doi.org/10.1016/j.eswa.2023.122156)
-
-These sources establish industry experimentation and a relational modeling
-rationale. They do not establish routine production deployment or prove that a
-GNN is universally superior to every non-graph detector.
-
-## Development
-
-```bash
-python -m unittest discover -s tests -v
-python -m compileall -q src tests
-```
-
-## License
-
-Apache-2.0. See [LICENSE](LICENSE).

@@ -1,120 +1,103 @@
-# Scam_List_GCN Plaintext Baseline
+# Scam_List_GCN plaintext baseline
 
-`Scam_List_GCN` is the agreed plaintext baseline for the next benchmark
-direction: event-level scam detection on a synthetic transaction graph. It is
-not an FHE implementation. It generates the dataset, trains the simplified GCN,
-and saves frozen weights and baseline metrics for later FHE evaluation.
+`Scam_List_GCN` is the v1 plaintext baseline for the FHE/GNN benchmark. It
+generates a synthetic scam transaction log, converts events into graph nodes,
+trains a simplified GCN attribute autoencoder, and saves frozen model artifacts
+for later FHE inference comparison.
 
-## Dataset shape
+Training is plaintext and is not part of future FHE timing.
 
-The raw log is intentionally closer to a transaction/interactions table than
-to already-encoded GCN features:
-
-| Field | Definition | Role |
-|---|---|---|
-| `event_id` | Unique transaction or interaction event | Row identifier |
-| `timestamp` | Event time | Used to derive daily velocity fields |
-| `source_account` | Account initiating the event | Builds graph edges |
-| `destination_account` | Account receiving the event | Builds graph edges |
-| `payment_channel` | Channel such as wallet, bank transfer, card, or instant pay | Public feature after encoding |
-| `transfer_amount` | Value transferred in the event | Sensitive numeric feature |
-| `source_daily_txn_count` | Count of source-account events so far that day | Public numeric feature |
-| `source_daily_total_amount` | Running daily amount for the source account | Sensitive numeric feature |
-| `prior_report_count` | Prior complaint/report count for the source account | Sensitive numeric feature |
-| `scam_label` | Ground-truth event label, `1` for scam/anomaly | Evaluation only |
-
-Example `df.head()`:
+## Dataset head
 
 | event_id | timestamp | source_account | destination_account | payment_channel | transfer_amount | source_daily_txn_count | source_daily_total_amount | prior_report_count | scam_label |
 |---:|---|---|---|---|---:|---:|---:|---:|---:|
-| 100001 | 2026-01-01 00:27:44+00:00 | ACC-000309 | ACC-000056 | bank_transfer | 16.57 | 1 | 16.57 | 1 | 0 |
-| 100002 | 2026-01-01 00:35:37+00:00 | ACC-000124 | ACC-000329 | wallet | 32.16 | 1 | 32.16 | 0 | 0 |
-| 100003 | 2026-01-01 00:42:46+00:00 | ACC-000209 | ACC-000181 | bank_transfer | 39.92 | 1 | 39.92 | 0 | 0 |
-| 100004 | 2026-01-01 00:42:52+00:00 | ACC-000326 | ACC-000373 | bank_transfer | 18.03 | 1 | 18.03 | 0 | 0 |
-| 100005 | 2026-01-01 00:58:19+00:00 | ACC-000469 | ACC-000261 | card | 37.98 | 1 | 37.98 | 0 | 0 |
+| 100001 | 2026-01-01 00:00:20+00:00 | ACC-007069 | ACC-008124 | bank_transfer | 9.82 | 1 | 9.82 | 0 | 0 |
+| 100002 | 2026-01-01 00:00:38+00:00 | ACC-019945 | ACC-006841 | wallet | 67.82 | 1 | 67.82 | 0 | 0 |
+| 100003 | 2026-01-01 00:00:40+00:00 | ACC-015803 | ACC-009010 | wallet | 18.14 | 1 | 18.14 | 0 | 0 |
+| 100004 | 2026-01-01 00:00:51+00:00 | ACC-003754 | ACC-001379 | wallet | 79.94 | 1 | 79.94 | 0 | 0 |
+| 100005 | 2026-01-01 00:01:06+00:00 | ACC-015121 | ACC-012577 | bank_transfer | 24.76 | 1 | 24.76 | 0 | 0 |
 
-## Mapping to GCN inputs
+## Data fields
 
-| Raw artifact | Simplified GCN artifact | Definition |
+| Field | Definition | Role |
 |---|---|---|
-| `source_account`, `destination_account` | `Network` | Event-event graph: two event nodes connect when they share a source or destination account within a small temporal window |
-| `payment_channel`, `source_daily_txn_count` | Public `Attributes` | Encoded public feature columns |
-| `transfer_amount`, `source_daily_total_amount`, `prior_report_count` | Sensitive `Attributes` | Normalized numeric columns later intended for encryption in the FHE benchmark |
-| `scam_label` | `Label` | Held for validation/test scoring only |
+| `event_id` | Unique transaction or interaction event key | Row key |
+| `timestamp` | Event time | Used to derive daily behaviour fields |
+| `source_account` | Account initiating the event | Used to build event graph |
+| `destination_account` | Account receiving the event | Used to build event graph |
+| `payment_channel` | Channel such as wallet, bank transfer, card, or instant pay | Public feature after encoding |
+| `transfer_amount` | Value transferred in the event | Sensitive feature |
+| `source_daily_txn_count` | Count of source-account events so far that day | Public feature |
+| `source_daily_total_amount` | Running daily amount for the source account | Sensitive feature |
+| `prior_report_count` | Prior complaint/report count for the source account | Sensitive feature |
+| `scam_label` | Ground-truth event label, `1` for scam/anomaly | Evaluation only |
 
-The first FHE benchmark should encrypt only these normalized feature columns:
+The graph connects events that share a source or destination account within a
+small temporal window. This creates the `Network` artifact. Encoded public and
+sensitive columns create `Attributes`. `scam_label` creates `Label`.
 
-| Raw field | Encoded feature |
-|---|---|
-| `transfer_amount` | `transfer_amount_z` |
-| `source_daily_total_amount` | `source_daily_total_amount_z` |
-| `prior_report_count` | `prior_report_count_z` |
+## Sensitive fields for future FHE inference
 
-Account identifiers are sensitive in a real system, but in this baseline they
-are used to construct the plaintext graph and are not model features. Encrypting
-graph topology is a future benchmark variant.
+| Raw field | Encoded feature | Why selected |
+|---|---|---|
+| `transfer_amount` | `transfer_amount_z` | Sensitive transaction value |
+| `source_daily_total_amount` | `source_daily_total_amount_z` | Sensitive transaction-behaviour aggregate |
+| `prior_report_count` | `prior_report_count_z` | Sensitive complaint/risk-intelligence history |
 
-## Simplified GCN
+These fields are encoded into numeric model features first, then encrypted for
+future FHE inference. The first benchmark version keeps graph topology public.
 
-The model is a DOMINANT-inspired attribute autoencoder, simplified for a future
-FHE workload by dropping full adjacency reconstruction.
+## Simplified GCN layers
 
 | Layer / stage | Input | Operation | Output |
 |---|---|---|---|
-| Input feature matrix | Node features `X` | Public features plus normalized sensitive features | `X` |
-| Normalized adjacency | Event graph `A` | Add self-loops and compute `D^-1/2 (A + I) D^-1/2` | `A_norm` |
+| Input feature matrix | Event-node features `X` | Encode raw log into public and sensitive numeric features | `X in R^(N x 8)` |
+| Normalized adjacency | Event graph `A` | Add self-loops and compute `D^(-1/2)(A+I)D^(-1/2)` | `A_norm` |
 | Encoder GCN layer 1 | `X`, `A_norm` | `activation(A_norm X W1 + b1)` | `H1` |
 | Encoder GCN layer 2 | `H1`, `A_norm` | `activation(A_norm H1 W2 + b2)` | `Z` |
 | Attribute decoder GCN layer 1 | `Z`, `A_norm` | `activation(A_norm Z W3 + b3)` | `Hd` |
 | Attribute decoder GCN layer 2 | `Hd`, `A_norm` | `A_norm Hd W4 + b4` | `X_hat` |
-| Anomaly scoring | `X`, `X_hat` | Reconstruction error over the sensitive feature columns | Event anomaly score |
+| Anomaly scoring | `X`, `X_hat` | Reconstruction error over selected sensitive feature columns | Event anomaly scores |
 
-Default activation is `poly2`, defined as `h = z + 0.125 z^2`, so the
-plaintext baseline already follows an FHE-compatible activation shape.
+Default activation:
 
-## Future FHE operation mapping
+```text
+activation(z) = z + 0.125z^2
+```
 
-| Increasing Overhead | Ciphertext Operation | Role in GCN | Equation | Operation to Benchmark | Adapter method |
-|---:|---|---|---|---|---|
-| 1 | Ciphertext-plaintext addition | Merge encrypted and public feature paths | `Enc(X_s W_s) + X_p W_p` | Add plaintext tensor to ciphertext tensor | `add_plain(ct, pt)` |
-| 2 | Ciphertext-ciphertext addition | Neighbor aggregation and score reduction | `sum_j c_ij Enc(h_j)`, `sum_m Enc(e_im^2)` | Add ciphertext tensors | `add(ct1, ct2)` |
-| 3 | Ciphertext-plaintext scalar multiplication | Apply normalized graph weights | `c_ij Enc(h_j)` | Multiply ciphertext by plaintext scalar | `mul_plain(ct, pt)` |
-| 4 | Ciphertext-plaintext matrix multiplication | Encoder and decoder projection | `Enc(X_s) W_s`, `Enc(H1) W_d` | Multiply ciphertext tensor by plaintext weight matrix | `matmul_plain(ct, W)` |
-| 5 | Ciphertext-ciphertext subtraction | Reconstruction difference | `Enc(X_s) - Enc(X_hat_s)` | Subtract ciphertext tensors | `sub(ct1, ct2)` |
-| 6 | Ciphertext-ciphertext multiplication | Squared reconstruction error | `Enc(e)^2` | Multiply ciphertext by ciphertext | `square(ct)` or `mul(ct1, ct2)` |
-| 7 | Polynomial or LUT nonlinear approximation | Replace GCN activation under FHE | `p_sigma(Enc(Z))` | Apply encrypted activation approximation | `activation(ct, kind="poly_relu")` |
+## Plaintext baseline result
 
-## Running on JupyterLab
+```text
+events=100000
+edges=740632
+scam_rate=0.0406
+features=8
+sensitive=['transfer_amount_z', 'source_daily_total_amount_z', 'prior_report_count_z']
+validation_threshold=4.344190838049405
+```
 
-Use a virtual environment. The script supports older server stacks, including
-Python 3.6 and Torch 1.4.
+| Split | Accuracy | Precision | Recall | F1 | ROC-AUC | Average precision |
+|---|---:|---:|---:|---:|---:|---:|
+| Validation | 0.992625 | 0.916928 | 0.900000 | 0.908385 | 0.997928 | 0.957634 |
+| Test | 0.993250 | 0.933419 | 0.897783 | 0.915254 | 0.998697 | 0.970149 |
+
+## Run command
 
 ```bash
 python -m pip install -r requirements-scam-list-gcn.txt
 python scripts/scam_list_gcn.py --outdir runs/scam_list_gcn --num-events 100000 --num-accounts 20000 --epochs 80
 ```
 
-If the script is uploaded directly into a JupyterLab home directory rather than
-inside the repository, run:
-
-```bash
-python scam_list_gcn.py --outdir runs/scam_list_gcn --num-events 100000 --num-accounts 20000 --epochs 80
-```
-
-## Outputs
+## Output artifacts
 
 | File | Meaning |
 |---|---|
-| `transactions.csv` | Raw synthetic transaction log |
+| `transactions.csv` | Synthetic transaction log |
 | `features.npy` | Encoded GCN feature matrix |
 | `labels.npy` | Event scam labels |
 | `network_adjacency.npz` | Sparse event graph |
 | `network_adjacency_normalized.npz` | GCN-normalized graph |
 | `splits.json` | Train/validation/test node indices |
-| `scam_list_gcn.pt` | Frozen trained model weights and metadata |
-| `baseline_metrics.json` | Validation/test Recall, F1, Accuracy, ROC-AUC, and model checksum |
+| `scam_list_gcn.pt` | Frozen model weights and metadata |
+| `baseline_metrics.json` | Recall, F1, Accuracy, ROC-AUC, average precision, checksum |
 | `anomaly_scores.csv` | Event-level anomaly scores |
-
-For the eventual benchmark, training remains out of scope. Train once, publish
-the dataset artifact, frozen weights, checksum, and baseline metrics, then let
-FHE submissions run the same inference path.

@@ -1,8 +1,0 @@
-{
-  "adapter": "polynomial_message_passing_v1",
-  "artifact": "model.npz",
-  "artifact_sha256": "78f0bfa62d4bf88c49b82667596ed8e41ca70ac70ae77a17c1dd9d29954a4337",
-  "name": "yelpchi-polynomial-gnn-v1",
-  "recommended_baseline": true,
-  "schema_version": "0.1.0"
-}
