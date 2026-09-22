@@ -7,6 +7,9 @@ for later FHE inference comparison.
 
 Training is plaintext and is not part of future FHE timing.
 
+For a submitter-focused explanation of raw fields, preprocessing, model column
+order and the encryption boundary, see [the dataset guide](dataset.md).
+
 ## Dataset head
 
 | event_id | timestamp | source_account | destination_account | payment_channel | transfer_amount | source_daily_txn_count | source_daily_total_amount | prior_report_count | scam_label |

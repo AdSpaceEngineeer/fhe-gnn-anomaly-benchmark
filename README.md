@@ -29,6 +29,21 @@ The original reported test Recall is **0.897783**, F1 **0.915254** and Accuracy
 **0.993250**. Full dataset definitions, its head, model layers and baseline
 provenance are in [the model/dataset notes](docs/scam-list-gcn.md).
 
+## Dataset and sensitive fields
+
+Each synthetic transaction is an event node. The GCN uses eight numeric features;
+three must be encrypted: `transfer_amount_z`, `source_daily_total_amount_z` and
+`prior_report_count_z`. These represent the transferred amount, the source
+account's running daily transferred total and its prior complaint/report count.
+They are preprocessed into numeric features before the adapter encodes/encrypts
+them. Payment-channel indicators, normalized daily transaction count and graph
+topology remain public under the v1 benchmark assumptions.
+
+Read the [dataset guide](docs/dataset.md) for a transaction-log preview, every
+field's definition, the exact model column order, sensitivity rationale and what
+the evaluator receives. The guide distinguishes the original training dataset
+from the three-row arithmetic toy included in this release.
+
 ## Execution modes
 
 All stages currently execute on one machine in separate processes:
