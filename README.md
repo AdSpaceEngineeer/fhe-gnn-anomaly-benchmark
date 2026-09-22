@@ -50,12 +50,15 @@ and reused across its repeat runs.
 
 - Python 3.10–3.12.
 - Core packages in `requirements.txt`.
-- Submission-specific packages in `submissions/<submission>/requirements.txt`.
-  The supplied CKKS example uses TenSEAL 0.3.16 and its Microsoft SEAL bindings.
+- Any additional packages required by your submission, listed in
+  `submissions/<submission>/requirements.txt`.
 
-### Installation
+The harness is scheme-independent. Installing it does not require CKKS, TenSEAL
+or any other particular FHE backend.
 
-Clone the repository, create an environment and copy the CKKS example:
+### Install the benchmark
+
+Clone the repository and install the core dependencies:
 
 ```console
 git clone https://github.com/AdSpaceEngineeer/fhe-gnn-anomaly-benchmark.git
@@ -63,18 +66,27 @@ cd fhe-gnn-anomaly-benchmark
 
 python -m venv .venv
 source .venv/bin/activate
-
-python -c "import shutil; shutil.copytree('submissions/toy_ckks', 'submissions/my_method')"
-python -m pip install -r requirements.txt -r submissions/my_method/requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-Copy the entire submission directory, including its helper files. The example
-is a starting implementation that submitters can modify; `submissions/template/`
-provides a scheme-independent alternative.
+### Add your submission
+
+Place your implementation in `submissions/my_method/`, including `adapter.py`,
+any supporting files, `requirements.txt` and a technical `README.md`.
+You can start from the scheme-independent `submissions/template/` directory;
+its adapter methods must be implemented before running the benchmark.
+
+Your submission defines its scheme, cryptographic parameters, encoding and
+packing. Implement the interface described under [Stage descriptions](#stage-descriptions)
+without modifying the harness or frozen workload. Install its dependencies:
+
+```console
+python -m pip install -r submissions/my_method/requirements.txt
+```
 
 ### Execution
 
-Run the submission with one command:
+Run your completed submission with one command:
 
 ```console
 python harness/run_submission.py --submission my_method --threads 2
@@ -83,6 +95,21 @@ python harness/run_submission.py --submission my_method --threads 2
 The harness selects `scam-list-gcn-100k-v1` and supplies its frozen model and data
 automatically. No training, model download or manual weight preparation is
 required. Use `--num-runs` for repeated measurements and `--help` for all options.
+
+### Optional: try the CKKS example
+
+Instead of implementing an adapter, you can copy the supplied CKKS example into
+a new submission directory and install its dependencies:
+
+```console
+python -c "import shutil; shutil.copytree('submissions/toy_ckks', 'submissions/my_ckks_example')"
+python -m pip install -r submissions/my_ckks_example/requirements.txt
+python harness/run_submission.py --submission my_ckks_example --threads 2
+```
+
+Copy the entire directory, including its helper files. This optional example uses
+TenSEAL 0.3.16 and its Microsoft SEAL bindings; these are dependencies of the
+example, not requirements of the benchmark.
 
 The CKKS example is unoptimized and targets the full workload. Its interface and
 packing algebra have been tested, but a completed encrypted run of this revision
