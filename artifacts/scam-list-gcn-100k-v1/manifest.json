@@ -1,0 +1,15 @@
+{
+  "format_version": 1,
+  "id": "scam-list-gcn-100k-v1",
+  "purpose": "trained_scam_list_gcn",
+  "activation": "poly2",
+  "atol": 0.001,
+  "rtol": 0.001,
+  "original_model_sha256": "21eeec488f8cba7dcd66c49021bd163b4eea926a1cc990c22e2d84f6485ebf51",
+  "sha256": {
+    "data.json": "304d359e0b0cd9709ac3ac88774b9b55c5f624221737b73f0138fb8e33f9f362",
+    "weights.json": "09605d2a447fe03bdf99b30556f37a871e788bd740889f937a1381187e7ddd57",
+    "reference.json": "2c3f8d900cb21bf29d3c13f5b0252246db9d60a06be3b70e5c306b8367b1839e",
+    "transactions.csv": "da07abe6278069edb3b6831d7676190425af3d197bb7a22deed2bf2039b26f48"
+  }
+}

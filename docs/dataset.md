@@ -6,13 +6,14 @@ one anomaly score per event by reconstructing its numeric features.
 
 There are two distinct datasets in the project:
 
-- **Original baseline:** 100,000 synthetic events used in the reported training
-  run. Its raw-log examples are shown below. The matching frozen run artifacts
-  are still pending import; see [artifact availability](../artifacts/README.md).
+- **Frozen trained baseline `scam-list-gcn-100k-v1`:** 100,000 synthetic events
+  from the newly frozen September 2026 retraining run. Its matching log, features,
+  graph, weights and reference scores are included; see
+  [the bundle](../artifacts/scam-list-gcn-100k-v1/README.md).
 - **Runnable `toy-v1`:** three fixed numeric feature rows in
   [data.json](../artifacts/toy-v1/data.json), with initialized, untrained weights.
   It tests encrypted arithmetic. It has no corresponding raw transaction log
-  and is not a sample extracted from the original trained baseline.
+  and is not a sample extracted from the trained baseline.
 
 All data are synthetic. “Sensitive” identifies the fields that submissions must
 protect under the benchmark's chosen confidentiality boundary. It is not a claim
@@ -20,7 +21,7 @@ that the other fields would be non-sensitive in a real financial dataset.
 
 ## What the transaction log looks like
 
-First five rows reported from the original baseline run (`transactions.csv`):
+First five rows verified from the published `transactions.csv.gz` (lossless gzip):
 
 | event_id | timestamp | source_account | destination_account | payment_channel | transfer_amount | source_daily_txn_count | source_daily_total_amount | prior_report_count | scam_label |
 |---:|---|---|---|---|---:|---:|---:|---:|---:|
@@ -29,6 +30,23 @@ First five rows reported from the original baseline run (`transactions.csv`):
 | 100003 | 2026-01-01 00:00:40+00:00 | ACC-015803 | ACC-009010 | wallet | 18.14 | 1 | 18.14 | 0 | 0 |
 | 100004 | 2026-01-01 00:00:51+00:00 | ACC-003754 | ACC-001379 | wallet | 79.94 | 1 | 79.94 | 0 | 0 |
 | 100005 | 2026-01-01 00:01:06+00:00 | ACC-015121 | ACC-012577 | bank_transfer | 24.76 | 1 | 24.76 | 0 | 0 |
+
+The log has 100,000 rows and 4,062 synthetic scam labels. The generator configured
+a pool of 20,000 accounts; 19,995 appear in the log. Frozen split sizes are 64,000
+training, 16,000 validation and 20,000 test nodes. The default training loss uses
+only the 61,400 normal training nodes. The full graph remains visible during the
+transductive forward pass; this is not a chronological deployment evaluation.
+
+To inspect the log in a notebook with pandas installed:
+
+```python
+import pandas as pd
+df = pd.read_csv("artifacts/scam-list-gcn-100k-v1/transactions.csv.gz")
+print(df.head())
+```
+
+Pandas decompresses it automatically. The benchmark itself uses the frozen
+numeric features in `data.json.gz`, not newly encoded rows from this preview.
 
 ## Raw field definitions
 

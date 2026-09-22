@@ -1,0 +1,135 @@
+{
+  "format_version": 1,
+  "status": "passed",
+  "submission": "plaintext_debug",
+  "adapter_sha256": "54bdaa82f60e63f17fec02ad33411e7a2e366efa890d742ffea4e0853f18bf4d",
+  "artifact_id": "scam-list-gcn-100k-v1",
+  "artifact_manifest_sha256": "0e019cfc4c7c09b207b6f1e1e4c1c259f611a811394b1cc046603202b7dd4860",
+  "registered_artifacts": true,
+  "purpose": "trained_scam_list_gcn",
+  "threads_requested": 2,
+  "key_policy": "fresh_per_invocation_reused_across_repeats",
+  "runs": [
+    {
+      "index": 0,
+      "stages": {
+        "encrypt": {
+          "wall_seconds": 0.9644776999921305,
+          "sampled_process_tree_peak_rss_bytes": 91406336,
+          "memory_sample_interval_seconds": 0.01,
+          "operation_and_io_seconds": 0.33054580001044087,
+          "process_lifetime_peak_rss_bytes": 91873280
+        },
+        "evaluate": {
+          "wall_seconds": 2.3364205000107177,
+          "sampled_process_tree_peak_rss_bytes": 400048128,
+          "memory_sample_interval_seconds": 0.01,
+          "operation_and_io_seconds": 1.543605099999695,
+          "process_lifetime_peak_rss_bytes": 416264192
+        },
+        "decrypt": {
+          "wall_seconds": 0.7575972999911755,
+          "sampled_process_tree_peak_rss_bytes": 75681792,
+          "memory_sample_interval_seconds": 0.01,
+          "operation_and_io_seconds": 0.1220677999954205,
+          "process_lifetime_peak_rss_bytes": 73920512
+        }
+      },
+      "verification": {
+        "passed": true,
+        "absolute_tolerance": 0.001,
+        "relative_tolerance": 0.001,
+        "max_absolute_error": 0.0,
+        "mean_absolute_error": 0.0,
+        "prediction_agreement": 1.0,
+        "quality": {
+          "threshold": 4.344182877864071,
+          "accuracy": 0.99325,
+          "precision": 0.9334186939820742,
+          "recall": 0.8977832512315271,
+          "f1": 0.9152542372881356,
+          "roc_auc": 0.998696909809189,
+          "average_precision": 0.9701515214388807
+        },
+        "plaintext_quality": {
+          "threshold": 4.344182877864071,
+          "accuracy": 0.99325,
+          "precision": 0.9334186939820742,
+          "recall": 0.8977832512315271,
+          "f1": 0.9152542372881356,
+          "roc_auc": 0.998696909809189,
+          "average_precision": 0.9701515214388807
+        }
+      },
+      "num_nodes_computed": 100000,
+      "num_test_nodes": 20000,
+      "inference_wall_seconds": 4.058495499994024,
+      "throughput_nodes_per_second": 42800.514718793675,
+      "end_to_end_nodes_per_second": 24639.67250922103,
+      "storage_bytes": {
+        "public_and_evaluation_keys": 0,
+        "client_private_keys": 0,
+        "encrypted_input": 6528906,
+        "encrypted_output": 2060474,
+        "persisted_intermediates": 0
+      },
+      "communication_bytes": {
+        "client_to_server_input": 6528906,
+        "server_to_client_result": 2060474,
+        "public_workload_upload_once": 52504025,
+        "key_upload_once": 0,
+        "key_upload_amortized": 0.0
+      },
+      "amortized_keygen_seconds": 0.7489361000043573
+    }
+  ],
+  "memory_method": "stage process lifetime high-water RSS plus 10ms sampled process-tree RSS",
+  "communication_method": "serialized payload bytes; no network transport timing",
+  "harness_sha256": {
+    "__init__.py": "6381adaf52d323106672d071b56f1a91cde3083c2b9df4403fab4d4977ef44cb",
+    "generate_input.py": "03e81b92bcac253fd70ad188dae3fed072586e7aa0224ce3d710ecc8cb2c6ed1",
+    "metrics.py": "09dbddf25cd55fa59af692be4ad358cfdd5502616a6e630adff255af8f229912",
+    "model.py": "46c91fa49f7836139fc679ac1fa6f457d54ea0b95c3abb0866be1731d5f346d6",
+    "params.py": "9ecf8feadc3845575bc486bd5f4aa6a1825210734ec7448e1c50b6d180e1fcf9",
+    "run_submission.py": "80421a6f83360161f6c53a8cd574d21c1f8ed05749bd68fc1ff71923e741fb87",
+    "security.py": "bde2806382b1a34099577a85be5da9c2215d1c79b5325ca88360f7ac3e3fb058",
+    "utils.py": "20dd63917955db6dcd2eb126e69f78ae72d0aab0d644e102cc1f5d9dcc1d1784",
+    "verify_result.py": "0c6a5cb670098843adc7be25cce1f8c21599292284696fc0788a27cc1a17feb0",
+    "worker.py": "e0f139e8401a4348c4d8ffa2d681f65cd37e815e118774968204977f7b865cda"
+  },
+  "submission_source_sha256": {
+    "adapter.py": "54bdaa82f60e63f17fec02ad33411e7a2e366efa890d742ffea4e0853f18bf4d",
+    "README.md": "3fb7fadcc2614b9769ec3ef1aa692ed55feb79ef41255e216eee18e165b5ef7c"
+  },
+  "description": {
+    "name": "plaintext_debug",
+    "is_fhe": false,
+    "scheme": "none"
+  },
+  "security": {
+    "status": "not_fhe",
+    "eligible": false
+  },
+  "keygen": {
+    "wall_seconds": 0.7489361000043573,
+    "sampled_process_tree_peak_rss_bytes": 62881792,
+    "memory_sample_interval_seconds": 0.01,
+    "operation_and_io_seconds": 0.0013697999966097996,
+    "process_lifetime_peak_rss_bytes": 58474496
+  },
+  "security_check": {
+    "wall_seconds": 0.641224200007855,
+    "sampled_process_tree_peak_rss_bytes": 62849024,
+    "memory_sample_interval_seconds": 0.01,
+    "operation_and_io_seconds": 0.002149100007954985,
+    "process_lifetime_peak_rss_bytes": 58556416
+  },
+  "eligible_for_comparison": false,
+  "timing_summary": {
+    "mean_inference_wall_seconds": 4.058495499994024,
+    "repeat_count": 1
+  },
+  "network_transfer_seconds": null,
+  "key_rotation_seconds": null,
+  "comparison_scope": "Only identical artifact IDs and manifests; toy results are not the trained baseline"
+}

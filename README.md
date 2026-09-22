@@ -21,12 +21,14 @@ additional checks of the actual serialized context.
 | Workload | Available | Meaning |
 |---|---|---|
 | `toy-v1` | Frozen inputs/weights/reference and real CKKS example included | Three-node, four-layer arithmetic smoke test; initialized weights, not trained |
-| Original 100,000-event baseline | Training code and reported metrics; original artifact import pending | Trained fraud/anomaly baseline; must use the original matching weights and data |
+| `scam-list-gcn-100k-v1` | Frozen 100,000-event data, trained weights, checkpoint, threshold and verified plaintext scores included | Trained synthetic scam/anomaly baseline; full-graph plaintext check available |
 
 The toy is immediately runnable. Its Recall/F1 are illustrative and must not be
 reported as evidence of fraud-detection quality. See [artifact status](artifacts/README.md).
-The original reported test Recall is **0.897783**, F1 **0.915254** and Accuracy
-**0.993250**. Full dataset definitions, its head, model layers and baseline
+The frozen trained baseline's test Recall is **0.897783**, F1 **0.915254** and
+Accuracy **0.993250**. This is the newly frozen September 2026 retraining run,
+not a recovered checkpoint from the earlier reported run. Full dataset definitions,
+its head, model layers and baseline
 provenance are in [the model/dataset notes](docs/scam-list-gcn.md).
 
 ## Dataset and sensitive fields
@@ -42,7 +44,8 @@ topology remain public under the v1 benchmark assumptions.
 Read the [dataset guide](docs/dataset.md) for a transaction-log preview, every
 field's definition, the exact model column order, sensitivity rationale and what
 the evaluator receives. The guide distinguishes the original training dataset
-from the three-row arithmetic toy included in this release.
+from the three-row arithmetic toy included in this release. Both bundles are
+included when cloning; large trained-data files use automatic lossless gzip loading.
 
 ## Execution modes
 
@@ -105,6 +108,24 @@ at most eight event nodes. Follow your machine's allocation rules. Environment
 limits are also passed to numerical libraries; custom backends must honor the
 thread argument. Increase neither threads nor workload size blindly.
 
+## Run the trained plaintext baseline
+
+No PyTorch, retraining, external dataset download or manual decompression is needed:
+
+```bash
+python harness/run_submission.py --submission plaintext_debug --debug-plaintext --artifacts artifacts/scam-list-gcn-100k-v1 --threads 2
+```
+
+The loader checks the registered manifest, data and model hashes, then recomputes
+the frozen plaintext reference. The harness executes inference on all 100,000
+nodes and computes quality metrics on the 20,000 fixed test nodes. The threshold
+is fixed at `4.344182877864071`.
+
+This is a **plaintext validation**, not an FHE measurement. The supplied toy CKKS
+adapter cannot run this large bundle. An engineer's adapter can select it using
+the same `--artifacts` option; no full-graph encrypted result is claimed here.
+See [the frozen bundle](artifacts/scam-list-gcn-100k-v1/README.md) for provenance.
+
 ## Submit your implementation
 
 1. Copy `submissions/template/` to `submissions/my_method/`.
@@ -117,6 +138,9 @@ thread argument. Increase neither threads nor workload size blindly.
 python -m pip install -r submissions/my_method/requirements.txt
 python harness/run_submission.py --submission my_method --threads 2
 ```
+
+That command defaults to the toy. When your adapter supports the full workload,
+add `--artifacts artifacts/scam-list-gcn-100k-v1` to benchmark the trained model.
 
 Keep the harness and published workload unchanged. We recommend using the
 published frozen weights and model checksum as-is. The

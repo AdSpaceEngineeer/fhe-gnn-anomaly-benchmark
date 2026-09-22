@@ -64,9 +64,11 @@ optimizations must be declared; they may not change the target model.
 At least 128-bit classical security is required. The submission contract explains
 evidence review, key handling and the actual-context check for the example.
 
-The original 100,000-event run's matching frozen bundle is awaiting import.
-Historical reported metrics remain in the model notes. The runnable toy bundle is
-versioned and independently labelled; it is not a replacement training run.
+The registered `scam-list-gcn-100k-v1` bundle contains a newly frozen September
+2026 retraining run with its exact data, checkpoint and independently verified
+reference scores. It is not the missing checkpoint from the earlier reported
+run. The runnable toy remains separately versioned and labelled. Full-graph
+plaintext verification has passed; a full-graph FHE result is not yet provided.
 
 ## Measurements and execution
 

@@ -1,4 +1,5 @@
 import copy
+import gzip
 import json
 from pathlib import Path
 import shutil
@@ -10,7 +11,7 @@ from harness.params import ROOT
 from harness.generate_input import load_bundle
 from harness.model import predict
 from harness.security import validate_description
-from harness.utils import read_json, write_json, write_blobs
+from harness.utils import read_json, write_json, write_blobs, sha256
 from harness.verify_result import verify
 
 
@@ -27,6 +28,53 @@ def test_tampered_artifact_rejected(tmp_path):
     p.write_text("{}")
     with pytest.raises(ValueError, match="checksum"):
         load_bundle(tmp_path / "toy")
+
+
+def test_compressed_bundle_preserves_identity(tmp_path):
+    folder = tmp_path / "toy"
+    shutil.copytree(ROOT / "artifacts" / "toy-v1", folder)
+    original = load_bundle(folder)
+    path = folder / "data.json"
+    with gzip.open(str(path) + ".gz", "wb") as handle:
+        handle.write(path.read_bytes())
+    with pytest.raises(ValueError, match="Ambiguous"):
+        load_bundle(folder)
+    path.unlink()
+    compressed = load_bundle(folder)
+    assert compressed["registered"]
+    assert compressed["manifest_sha256"] == original["manifest_sha256"]
+    assert compressed["reference"] == original["reference"]
+    assert compressed["data"] == original["data"]
+    with gzip.open(str(path) + ".gz", "wb") as handle:
+        handle.write(b"{}")
+    with pytest.raises(ValueError, match="checksum"):
+        load_bundle(folder)
+
+
+def test_frozen_trained_baseline():
+    from harness.metrics import quality
+    folder = ROOT / "artifacts" / "scam-list-gcn-100k-v1"
+    bundle = load_bundle(folder)  # checks all hashes and all 100,000 reference scores
+    assert bundle["registered"]
+    assert bundle["public"]["node_count"] == 100000
+    assert bundle["public"]["sensitive_indices"] == [4, 6, 7]
+    assert sha256(folder / "scam_list_gcn.pt") == bundle["manifest"]["original_model_sha256"]
+    data, reference = bundle["data"], bundle["reference"]
+    assert [len(data["splits"][s]) for s in ("train", "val", "test")] == [64000, 16000, 20000]
+    indices = data["splits"]["test"]
+    actual = quality(np.asarray(data["labels"])[indices], np.asarray(reference["scores"])[indices], reference["threshold"])
+    assert actual["f1"] == pytest.approx(0.9152542372881356)
+    assert actual["recall"] == pytest.approx(0.8977832512315271)
+    assert actual["accuracy"] == pytest.approx(0.99325)
+    assert actual == pytest.approx(reference["test"], abs=1e-14)
+
+
+def test_tampered_checkpoint_rejected(tmp_path):
+    folder = tmp_path / "toy"
+    shutil.copytree(ROOT / "artifacts" / "toy-v1", folder)
+    (folder / "scam_list_gcn.pt").write_bytes(b"not the expected checkpoint")
+    with pytest.raises(ValueError, match="checkpoint checksum"):
+        load_bundle(folder)
 
 
 def test_model_matches_hand_calculation():

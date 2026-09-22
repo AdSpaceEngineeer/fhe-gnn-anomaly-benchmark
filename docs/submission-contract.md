@@ -76,6 +76,12 @@ but are not registered comparisons. The loader recomputes plaintext predictions
 and validates finite inputs, model dimensions and disjoint splits before running.
 Data preparation/reference checking are outside measured FHE stage times.
 
+Large files may be stored as `data.json.gz`, `reference.json.gz` or
+`transactions.csv.gz`. The loader decompresses them automatically and checks
+the SHA256 of the original uncompressed bytes against the unchanged manifest.
+Both plain and compressed copies of the same logical file are rejected as
+ambiguous. Compression is storage-only: it changes neither features nor scores.
+
 The whole frozen graph is one workload instance. Repeats do not retrain or alter
 it. Do not slice node rows and renormalize the graph to manufacture a smaller
 query: this changes GCN predictions. A future small-query instance must preserve

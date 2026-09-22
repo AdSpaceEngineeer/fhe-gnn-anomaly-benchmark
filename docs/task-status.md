@@ -2,7 +2,7 @@
 
 | Task | Status |
 |---|---|
-| 1. Publish original frozen workload | Awaiting original generated run folder; toy fixture and import utility complete |
+| 1. Publish frozen workload | Complete: newly frozen `scam-list-gcn-100k-v1` data, trained checkpoint/weights, threshold, splits and verified reference scores |
 | 2. Submission/security contract | Implemented; minimum 128-bit classical security |
 | 3. Submission template | Implemented |
 | 4. Inference-only workload modules | Implemented and checked against PyTorch equations |
@@ -13,9 +13,11 @@
 | 9. Dependency files | Core, development, training and CKKS dependencies separated |
 | 10. README quickstart/tests | Implemented; Windows local validation and Linux/Windows CI configured |
 
-To finish task 1, obtain the original output folder containing
-`scam_list_gcn.pt`, `features.npy`, `labels.npy`,
-`network_adjacency_normalized.npz`, `feature_schema.json`, `splits.json`,
-`baseline_metrics.json` and `transactions.csv`.
-The Python training script alone cannot recover the exact frozen model artifact.
-No replacement model has been trained or presented as that original baseline.
+All ten implementation tasks are complete. The previously unavailable checkpoint
+was replaced through an explicitly approved retraining run, now frozen as the
+published baseline. Its provenance is documented; it is not presented as recovery
+of the older checkpoint. No training is needed by benchmark submitters.
+
+Remaining research work includes full-size FHE submissions and measurement of
+their overhead. The CKKS example is intentionally a small, unoptimized arithmetic
+test, not an implementation validated on the 100,000-node trained graph.

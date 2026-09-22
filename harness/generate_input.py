@@ -4,7 +4,7 @@ import numpy as np
 import scipy.sparse as sp
 from harness.model import LAYERS, predict
 from harness.params import ROOT, SENSITIVE_FIELDS
-from harness.utils import read_json, sha256
+from harness.utils import read_json, sha256, artifact_sha256, read_artifact_json
 
 REQUIRED = {"data.json", "weights.json", "reference.json"}
 
@@ -17,9 +17,12 @@ def load_bundle(path):
     for name, expected in manifest["sha256"].items():
         if Path(name).name != name or "/" in name or "\\" in name:
             raise ValueError("Artifact names must be simple filenames")
-        if sha256(path / name) != expected:
+        if artifact_sha256(path / name) != expected:
             raise ValueError("Artifact checksum mismatch: " + name)
-    data, weights, reference = [read_json(path / name) for name in ("data.json", "weights.json", "reference.json")]
+    checkpoint = path / "scam_list_gcn.pt"
+    if checkpoint.exists() and sha256(checkpoint) != manifest.get("original_model_sha256"):
+        raise ValueError("Original model checkpoint checksum mismatch")
+    data, weights, reference = [read_artifact_json(path / name) for name in ("data.json", "weights.json", "reference.json")]
     x = np.asarray(data["features"], dtype=float)
     if x.ndim != 2 or not np.isfinite(x).all():
         raise ValueError("Features must be a finite N x F matrix")

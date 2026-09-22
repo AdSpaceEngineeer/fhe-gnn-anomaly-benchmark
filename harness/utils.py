@@ -1,4 +1,5 @@
 """Serialization, hashing and process measurement helpers."""
+import gzip
 import hashlib
 import importlib.util
 import json
@@ -26,6 +27,36 @@ def sha256(path):
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def open_artifact(path):
+    """Read exact logical bytes from a plain file or its lossless .gz version.
+
+    Manifests identify uncompressed content, independent of storage encoding.
+    Reject ambiguous copies rather than silently choosing one of them.
+    """
+    path = Path(path)
+    compressed = path.with_name(path.name + ".gz")
+    if path.exists() and compressed.exists():
+        raise ValueError("Ambiguous plain and compressed artifact: " + path.name)
+    if path.exists():
+        return path.open("rb")
+    if compressed.exists():
+        return gzip.open(compressed, "rb")
+    raise FileNotFoundError("Missing artifact: " + str(path) + " (or .gz)")
+
+
+def artifact_sha256(path):
+    digest = hashlib.sha256()
+    with open_artifact(path) as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def read_artifact_json(path):
+    with open_artifact(path) as handle:
+        return json.load(handle)
 
 
 def load_adapter(path):
