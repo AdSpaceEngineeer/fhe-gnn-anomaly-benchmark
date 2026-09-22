@@ -35,8 +35,10 @@ through the transductive forward pass. This is not a chronological held-out
 deployment evaluation. The synthetic generator deliberately makes anomalies
 distinguishable; high scores do not establish real-world fraud generalization.
 
-The original widths are 8/64/32/64/8. The independent toy uses 8/2/2/2/8 and
-initialized weights. A toy result is not a result on the trained baseline.
+The fixed widths are 8/64/32/64/8. There is one benchmark workload. The former
+initialized-weight miniature GCN is retained only as an internal test fixture.
+The toy CKKS submission refers to a simple encryption implementation of the
+fixed trained model, not another GCN or workload size.
 
 ## Data and encryption boundary
 
@@ -67,7 +69,7 @@ evidence review, key handling and the actual-context check for the example.
 The registered `scam-list-gcn-100k-v1` bundle contains a newly frozen September
 2026 retraining run with its exact data, checkpoint and independently verified
 reference scores. It is not the missing checkpoint from the earlier reported
-run. The runnable toy remains separately versioned and labelled. Full-graph
+run. The old miniature fixture is not registered as a benchmark. Full-graph
 plaintext verification has passed; a full-graph FHE result is not yet provided.
 
 ## Measurements and execution

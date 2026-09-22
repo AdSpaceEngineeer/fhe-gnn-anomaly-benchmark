@@ -14,5 +14,7 @@ bootstrapping or native runtimes, provided the frozen inference target and
 minimum 128-bit classical security requirement are satisfied. Evidence for novel
 schemes needs review; model correctness alone does not demonstrate security.
 
-This release does not contain OpenFHE or Concrete implementations, nor a claim
-that the tiny scalar CKKS example scales to the original 100,000-node graph.
+The copyable CKKS code now packs event rows and targets the same fixed trained
+GCN as all submissions, without an eight-node cap. Its full encrypted execution
+has not been validated; the historical scalar-toy results must not be reused as
+evidence for it. This release contains no OpenFHE or Concrete implementations.

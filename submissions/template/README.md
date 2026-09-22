@@ -33,3 +33,6 @@ python harness/run_submission.py --submission YOUR_NAME --threads 2
 
 List supported artifact IDs, input ranges, resource needs and approximation
 failures. Attach the generated `report.json`; do not attach `io/`.
+Also share `comparison.md` for the compact quality/overhead table. Optional
+server timings belong in `intermediate_dir/server_reported_steps.json` as a flat
+dictionary of names to finite nonnegative seconds; explain the measurement scope.

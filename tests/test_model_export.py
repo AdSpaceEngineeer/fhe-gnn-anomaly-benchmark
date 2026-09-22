@@ -17,7 +17,7 @@ def test_torch_and_numpy_model_agree_and_export(tmp_path):
     training = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(training)
     torch.set_num_threads(1)
-    b = load_bundle(ROOT / "artifacts/toy-v1")
+    b = load_bundle(ROOT / "tests/fixtures/arithmetic")
     data = b["data"]
     x = np.asarray(data["features"], dtype=np.float32)
     g = data["adjacency"]

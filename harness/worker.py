@@ -18,6 +18,7 @@ def main():
     root = Path(args.io)
     adapter = load_adapter(args.adapter)
     start = time.perf_counter()
+    extra = {}
     if args.stage == "describe":
         write_json(root / "description.json", adapter.describe())
     elif args.stage == "keygen":
@@ -33,11 +34,18 @@ def main():
                                     read_blobs(root / "client" / "keys"), args.threads)
         write_blobs(root / "server" / "input", encrypted)
     elif args.stage == "evaluate":
-        result = adapter.evaluate(read_blobs(root / "server" / "input"),
-                                  read_json(root / "server" / "public.json"),
-                                  read_blobs(root / "server" / "keys"), args.threads,
-                                  root / "server" / "intermediate")
+        reading = time.perf_counter()
+        encrypted = read_blobs(root / "server" / "input")
+        public = read_json(root / "server" / "public.json")
+        keys = read_blobs(root / "server" / "keys")
+        read_seconds = time.perf_counter() - reading
+        evaluating = time.perf_counter()
+        result = adapter.evaluate(encrypted, public, keys, args.threads, root / "server" / "intermediate")
+        adapter_seconds = time.perf_counter() - evaluating
+        writing = time.perf_counter()
         write_blobs(root / "server" / "output", result)
+        extra = {"harness_file_io_seconds": read_seconds + time.perf_counter() - writing,
+                 "adapter_call_seconds": adapter_seconds}
     else:
         scores = adapter.decrypt(read_blobs(root / "server" / "output"),
                                  read_blobs(root / "client" / "keys"), args.threads)
@@ -51,7 +59,7 @@ def main():
         if sys.platform != "darwin":
             peak *= 1024
     write_json(root / (args.stage + "_measurement.json"),
-               {"operation_and_io_seconds": seconds, "process_lifetime_peak_rss_bytes": peak})
+               {"operation_and_io_seconds": seconds, "process_lifetime_peak_rss_bytes": peak, **extra})
 
 
 if __name__ == "__main__":

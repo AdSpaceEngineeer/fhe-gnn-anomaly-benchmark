@@ -54,5 +54,6 @@ python harness/run_submission.py --submission plaintext_debug --debug-plaintext 
 
 No manual decompression or PyTorch installation is necessary for that command.
 It validates the bundle and runs plaintext inference, reporting metrics on the
-fixed test nodes. It is not an FHE result. The toy CKKS submission is deliberately
-too small for this bundle; full-size FHE submissions remain research work.
+fixed test nodes. It is not an FHE result. The copyable toy CKKS submission now
+targets this same workload; its name describes a simple FHE implementation, not
+a different GCN. A completed encrypted run of that revised code is not claimed.

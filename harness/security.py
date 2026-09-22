@@ -19,7 +19,7 @@ def validate_description(description, debug=False):
     for name in ("encoding", "packing", "activation"):
         if not description.get(name):
             raise ValueError("Missing submission description: " + name)
-    if security.get("validator") == "seal_tc128":
+    if security.get("validator") in ("seal_tc128", "seal_tc128_native"):
         p = description["parameters"]
         n, chain = p.get("poly_modulus_degree"), p.get("coeff_mod_bit_sizes")
         if n not in SEAL_TC128_MAX_BITS or not isinstance(chain, list) or not chain or any(type(b) is not int or not 2 <= b <= 60 for b in chain):
@@ -32,6 +32,8 @@ def validate_description(description, debug=False):
 
 def inspect_public_context(description, public_keys, threads):
     """Check the actual serialized TenSEAL context, not just claimed parameters."""
+    if description.get("security", {}).get("validator") == "seal_tc128_native":
+        return inspect_native_context(description, public_keys)
     if description.get("security", {}).get("validator") != "seal_tc128":
         return None
     import tenseal as ts
@@ -55,3 +57,37 @@ def inspect_public_context(description, public_keys, threads):
     return {"status": "seal_tc128_context_checked", "eligible": True, "classical_bits": 128,
             "actual_poly_modulus_degree": actual_degree, "actual_coeff_mod_bit_sizes": declared["coeff_mod_bit_sizes"],
             "scope": "SEAL default tc128 parameter validation; implementation and threat assumptions still require review"}
+
+
+def inspect_native_context(description, public_keys):
+    """SEAL serialized parameters/public key, using explicit TC128 validation."""
+    import tempfile
+    from pathlib import Path
+    import tenseal.sealapi as seal
+    validate_description(description)
+    if set(public_keys) != {"parameters.bin", "public.key", "relin.key", "galois.key"}:
+        raise ValueError("Native evaluator key bundle must exclude secret keys and contain only public/evaluation files")
+    declared = description["parameters"]
+    with tempfile.TemporaryDirectory(prefix="scam-security-check-") as temporary:
+        path = Path(temporary)
+        (path / "parameters.bin").write_bytes(public_keys["parameters.bin"])
+        actual = seal.EncryptionParameters(seal.SCHEME_TYPE.CKKS)
+        actual.load(str(path / "parameters.bin"))
+        expected = seal.EncryptionParameters(seal.SCHEME_TYPE.CKKS)
+        expected.set_poly_modulus_degree(declared["poly_modulus_degree"])
+        expected.set_coeff_modulus(seal.CoeffModulus.Create(declared["poly_modulus_degree"], declared["coeff_mod_bit_sizes"]))
+        if actual.parms_id() != expected.parms_id():
+            raise ValueError("Actual encryption context differs from submission parameters")
+        ctx = seal.SEALContext(actual, True, seal.SEC_LEVEL_TYPE.TC128)
+        if not ctx.parameters_set():
+            raise ValueError("Serialized encryption context failed 128-bit security checks")
+        (path / "public.key").write_bytes(public_keys["public.key"])
+        key = seal.PublicKey()
+        # A serialized SecretKey is not a valid PublicKey and must fail here.
+        key.load(ctx, str(path / "public.key"))
+        if key.parms_id() != actual.parms_id():
+            raise ValueError("Public key parameters differ from the context")
+    return {"status": "seal_tc128_context_checked", "eligible": True, "classical_bits": 128,
+            "actual_poly_modulus_degree": declared["poly_modulus_degree"],
+            "actual_coeff_mod_bit_sizes": declared["coeff_mod_bit_sizes"],
+            "scope": "Explicit SEAL TC128 parameter/public-key validation; source review is still required"}

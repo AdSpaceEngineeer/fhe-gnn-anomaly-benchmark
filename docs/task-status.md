@@ -9,7 +9,7 @@
 | 5. Shared helper files | Implemented |
 | 6. Verification/metrics | Implemented; measurement limitations documented |
 | 7. Main runner | Implemented as `harness/run_submission.py` |
-| 8. Toy CKKS example | Implemented and tested through all four GCN layers |
+| 8. Copyable toy CKKS submission | Revised packed implementation targets the fixed trained workload; software/algebra checks only, live CKKS validation pending |
 | 9. Dependency files | Core, development, training and CKKS dependencies separated |
 | 10. README quickstart/tests | Implemented; Windows local validation and Linux/Windows CI configured |
 
@@ -18,6 +18,10 @@ was replaced through an explicitly approved retraining run, now frozen as the
 published baseline. Its provenance is documented; it is not presented as recovery
 of the older checkpoint. No training is needed by benchmark submitters.
 
-Remaining research work includes full-size FHE submissions and measurement of
-their overhead. The CKKS example is intentionally a small, unoptimized arithmetic
-test, not an implementation validated on the 100,000-node trained graph.
+Optional BERT-style server timings and `comparison.md` now accompany the primary
+JSON measurements. There is no separate model-preparation stage or workload-size
+menu. The old miniature graph is an internal software fixture only.
+
+Remaining validation includes a completed encrypted run of the revised packed
+CKKS example. A live check was stopped during key generation at the user's
+request; no success or FHE performance result is claimed for that revision.

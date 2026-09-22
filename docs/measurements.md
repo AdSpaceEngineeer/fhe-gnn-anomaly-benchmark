@@ -25,8 +25,9 @@ large jobs on shared systems and follow local allocation rules.
 
 The first run is cold and repeats include context loads; no warmup is silently
 discarded. This is a correctness-stage, file-based baseline, not an optimized
-transport or kernel-only performance measurement. The tiny default does not
-establish full dataset scaling. A single graph run scores a batch of event nodes;
+transport or kernel-only performance measurement. The default is the fixed trained
+100,000-event workload; internal fixtures do not establish its FHE performance.
+A single graph run scores a batch of event nodes;
 per-node latency is not separately measured.
 
 Exit codes: `0` numerical verification passed; `2` valid scores exceeded the
@@ -35,8 +36,40 @@ Security status and artifact registration are separate from numerical PASS.
 `eligible_for_comparison` is scoped to identical artifact manifests and requires
 all three. The plaintext debug adapter is never an FHE comparison.
 
-`report.json` is the shareable result. `io/` contains client secret keys and test
+`report.json` and `comparison.md` are the shareable results. `io/` contains client secret keys and test
 plaintext; never submit it. Default output uses a fresh directory, and an existing
 `--out` is rejected. Reports do not collect hardware identifiers by default;
 `--include-hardware` adds an OS/CPU summary. Without comparable hardware/runtime
 conditions, do not interpret timing differences as scheme superiority.
+
+## Optional server-reported timings
+
+Following [BERT's server reporting convention](https://github.com/fhe-benchmarking/BERT/blob/170bfe567545d74d0fad785a052518351d37bc93/submissions/server_encrypted_compute.py),
+an adapter may write `intermediate_dir/server_reported_steps.json`, a flat JSON
+object mapping step names to finite nonnegative seconds, for example:
+
+```json
+{"Encrypted computation": 12.3, "I/O": 1.4, "Total": 13.7}
+```
+
+The harness stores these separately in each run's `server_reported_steps`; it
+never substitutes or subtracts them from independently measured stage times.
+Names can describe other useful components. Document whether they overlap and
+what `Total` includes. Missing files are optional; malformed, oversized (>64 KiB),
+duplicate-key or nonnumeric/negative/nonfinite reports are ignored with warnings.
+This does not change numerical verification or the main measurements.
+
+The evaluator worker also records `harness_file_io_seconds` for reading its inputs
+and writing returned outputs, and `adapter_call_seconds` for the adapter call.
+Adapter-reported I/O covers only the adapter's declared scope; these fields are
+not assumed to equal the worker wall time. The timing file is excluded from
+persisted intermediate-value bytes, because it is reporting metadata.
+
+## Compact companion table
+
+`comparison.md` compares fixed-reference Recall/F1/Accuracy with the submission,
+then displays main overhead and optional timing detail. It averages completed
+repeats, labels worst-case score error/maximum RAM, and counts each one-time
+key/public-workload upload once when amortizing communication. Missing timings
+appear as a dash, not zero. No matched plaintext timing is invented. Debug runs
+are labelled non-FHE; failed runs without completed results get no fabricated table.

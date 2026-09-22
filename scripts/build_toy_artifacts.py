@@ -11,7 +11,7 @@ from harness.utils import write_json, sha256
 
 
 def main():
-    root = ROOT / "artifacts" / "toy-v1"
+    root = ROOT / "tests" / "fixtures" / "arithmetic"
     root.mkdir(parents=True, exist_ok=True)
     x = np.array([[1, 0, 0, 0, .75, -.4, 1.2, .4],
                   [0, 1, 0, 0, .2, .1, .3, -.2],
@@ -44,7 +44,8 @@ def main():
                 "weights_provenance": "fixed random initialization, seed 2026; not trained",
                 "sha256": {f: sha256(root / f) for f in ("data.json", "weights.json", "reference.json")}}
     write_json(root / "manifest.json", manifest)
-    write_json(ROOT / "artifacts" / "registry.json", {"toy-v1": sha256(root / "manifest.json")})
+    # Internal fixture generation must never replace the public workload registry.
+    print("Internal arithmetic fixture:", root)
 
 
 if __name__ == "__main__":

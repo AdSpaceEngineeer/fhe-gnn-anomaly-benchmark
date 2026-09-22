@@ -1,12 +1,12 @@
 # Frozen workload artifacts
 
-`toy-v1/` is the installed-by-cloning arithmetic smoke test. Its four-layer GCN
-has widths 8/2/2/2/8, three nodes, fixed initialized weights and illustrative
-labels. It is not trained and does not reproduce the 100,000-event baseline.
+There is one published benchmark workload: `scam-list-gcn-100k-v1`.
+The former miniature GCN lives only in `tests/fixtures/arithmetic/` as an internal
+regression fixture and is no longer registered as a benchmark workload.
 
 [`scam-list-gcn-100k-v1/`](scam-list-gcn-100k-v1/README.md) contains the newly
 frozen September 2026 trained baseline: 100,000 events, widths 8/64/32/64/8, exact
-data, weights, checkpoint and verified reference scores. Both bundles are included
+data, weights, checkpoint and verified reference scores. These files are included
 when cloning. The older reported run's checkpoint was unavailable; this is the
 approved retraining run, not recovery of that lost checkpoint. Do not substitute
 toy scores for trained-baseline metrics.
@@ -19,7 +19,9 @@ python harness/run_submission.py --submission plaintext_debug --debug-plaintext 
 
 This verifies the full frozen graph in plaintext. It is not an FHE measurement.
 An FHE implementation that supports this workload uses the same `--artifacts`
-option with its own submission name. The toy CKKS example does not support it.
+option with its own submission name. It is also the runner's default: no artifact
+selection is needed in the CKKS copy/install/run workflow. The revised CKKS code
+targets this workload; a completed full encrypted run is not claimed.
 
 ## Maintainer import, outside inference
 

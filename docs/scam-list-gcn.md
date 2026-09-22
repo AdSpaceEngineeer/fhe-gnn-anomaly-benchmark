@@ -75,7 +75,7 @@ These are the verified results of the newly frozen September 2026 retraining run
 published as [`scam-list-gcn-100k-v1`](../artifacts/scam-list-gcn-100k-v1/README.md).
 The older reported run's checkpoint was unavailable; this release does not claim
 to recover it. The same generator configuration, seed and architecture were used.
-The independent arithmetic toy does not reproduce these numbers.
+The internal miniature regression fixture does not reproduce these numbers.
 
 ```text
 events=100000

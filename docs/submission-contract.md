@@ -7,6 +7,10 @@ columns, scoring rule, threshold, split and numerical tolerances. Submissions ow
 encryption algorithms, parameters, encoding, packing and encrypted implementation.
 Use the published frozen weights and checksums unchanged; do not retrain during
 a benchmark. Arithmetic rearrangements must preserve the inference semantics.
+There is one registered workload, `scam-list-gcn-100k-v1`, selected by default.
+Internal software fixtures are not alternative benchmark sizes. The harness
+supplies weights automatically; there is no user-facing model-preparation stage.
+Any backend-specific weight encoding/packing is internal to evaluation and timed.
 Polynomial/LUT approximations and fixed-point quantization are allowed if declared
 and checked against the same frozen reference. Report quality even when numerical
 verification fails; changing the tolerance/threshold creates another workload.
@@ -41,6 +45,12 @@ serialized payloads, not estimated ciphertext sizes. Names cannot contain paths.
 The adapter may call C++ binaries or other runtimes; document their installation.
 Respect `threads` in the backend, not only BLAS environment variables.
 
+An evaluator may write `intermediate_dir/server_reported_steps.json` using BERT's
+optional flat `{name: seconds}` format, such as `{"Encrypted computation": 1.2,
+"I/O": 0.3, "Total": 1.5}`. Document the scope and any overlapping timers.
+The harness labels these as self-reported, adds them to JSON and the compact
+comparison, and retains all independently measured main metrics unchanged.
+
 `public` contains `x_public`, `public_indices`, `sensitive_indices`, `feature_count`,
 `node_count`, `adjacency` (COO `rows`, `cols`, `values`), `weights`, and `activation`.
 Weights use `encoder_1.weight`, `encoder_1.bias`, etc. Matrix shape is input width
@@ -54,7 +64,9 @@ At least 128-bit classical security is mandatory for every encryption/key-switch
 bootstrapping component. Declarations below 128 or missing parameter/evidence
 fields are rejected. `seal_tc128` additionally checks the actual serialized
 TenSEAL context against the declared chain and SEAL's standard parameter bounds.
-This validates the standard parameter choice, not arbitrary modifications to
+`seal_tc128_native` performs equivalent parameter/public-key checks for the native
+SEAL file format, constructing its context with explicit `TC128` security.
+These validate the standard parameter choice, not arbitrary modifications to
 SEAL's secret/error sampling or implementation.
 
 Novel schemes use `validator: external_review`: include estimator/version,
@@ -84,6 +96,5 @@ ambiguous. Compression is storage-only: it changes neither features nor scores.
 
 The whole frozen graph is one workload instance. Repeats do not retrain or alter
 it. Do not slice node rows and renormalize the graph to manufacture a smaller
-query: this changes GCN predictions. A future small-query instance must preserve
-the necessary multi-hop context and full-graph normalization. Toy and trained
-instances must never be mixed in a comparison table.
+query: this changes GCN predictions. Internal miniature regression fixtures are
+not benchmark workloads and must never be compared with the trained workload.

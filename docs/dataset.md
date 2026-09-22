@@ -4,16 +4,16 @@ Each row describes one synthetic transfer event. Each event becomes a GCN node;
 edges link events with shared source or destination accounts. The model produces
 one anomaly score per event by reconstructing its numeric features.
 
-There are two distinct datasets in the project:
+There is one benchmark dataset:
 
 - **Frozen trained baseline `scam-list-gcn-100k-v1`:** 100,000 synthetic events
   from the newly frozen September 2026 retraining run. Its matching log, features,
   graph, weights and reference scores are included; see
   [the bundle](../artifacts/scam-list-gcn-100k-v1/README.md).
-- **Runnable `toy-v1`:** three fixed numeric feature rows in
-  [data.json](../artifacts/toy-v1/data.json), with initialized, untrained weights.
-  It tests encrypted arithmetic. It has no corresponding raw transaction log
-  and is not a sample extracted from the trained baseline.
+
+The former three-row miniature dataset is now only an
+[internal software-test fixture](../tests/fixtures/README.md), not a benchmark
+workload. The copyable toy CKKS submission receives the full trained dataset.
 
 All data are synthetic. “Sensitive” identifies the fields that submissions must
 protect under the benchmark's chosen confidentiality boundary. It is not a claim

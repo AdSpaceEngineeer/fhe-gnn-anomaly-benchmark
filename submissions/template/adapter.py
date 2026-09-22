@@ -21,6 +21,10 @@ class Adapter:
         public: weights, normalized adjacency (COO rows/cols/values), x_public,
         sensitive/public column indices, feature_count, node_count, activation.
         Optional persisted intermediate files belong in intermediate_dir.
+        Optionally write intermediate_dir / "server_reported_steps.json":
+        {"Encrypted computation": 1.2, "I/O": 0.3, "Total": 1.5}.
+        Values are finite nonnegative seconds. This is extra self-reported
+        detail, never a replacement for the harness's own measurements.
         """
         raise NotImplementedError
 

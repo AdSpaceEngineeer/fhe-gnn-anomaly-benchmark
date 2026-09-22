@@ -1,7 +1,8 @@
 # Example reports
 
-`toy_ckks_report.json` is a real two-repeat run of the published toy through the
-fixed runner. It contains no client keys, raw sensitive inputs or institutional
+`toy_ckks_report.json` is a historical two-repeat run of the earlier miniature,
+scalar CKKS implementation, NOT the current packed submission or trained workload.
+It contains no client keys, raw sensitive inputs or institutional
 server details. Timings are an implementation smoke test on one development
 machine, not a scheme leaderboard or full-data scaling result.
 
@@ -20,3 +21,7 @@ measure plaintext serialization, **not encryption or FHE overhead**.
 
 Neither report includes client-key directories. The trained bundle's detection
 metrics are a synthetic-data baseline, not evidence of full-size FHE execution.
+
+`frozen_plaintext_comparison.md` is the compact companion generated alongside
+the latest full-workload plaintext report. Its timings measure a debug pipeline,
+not encrypted performance or a matched-hardware speedup comparison.

@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MIN_SECURITY_BITS = 128
 DEFAULT_THREADS = 2
+DEFAULT_ARTIFACTS = ROOT / "artifacts" / "scam-list-gcn-100k-v1"
 KEY_POLICY = "fresh_per_invocation_reused_across_repeats"
 SENSITIVE_FIELDS = ["transfer_amount_z", "source_daily_total_amount_z", "prior_report_count_z"]
 STAGES = ("keygen", "encrypt", "evaluate", "decrypt")

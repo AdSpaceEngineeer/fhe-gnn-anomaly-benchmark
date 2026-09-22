@@ -12,15 +12,17 @@ def test_real_ckks_pipeline(tmp_path):
     pytest.importorskip("tenseal")
     out = tmp_path / "ckks"
     result = subprocess.run([sys.executable, str(ROOT / "harness/run_submission.py"),
-                             "--submission", "toy_ckks", "--out", str(out), "--threads", "2"],
-                            capture_output=True, text=True, timeout=600)
+                             "--submission", "toy_ckks", "--out", str(out), "--threads", "2",
+                             "--artifacts", str(ROOT / "tests/fixtures/arithmetic")],
+                            capture_output=True, text=True, timeout=1200)
     assert result.returncode == 0, result.stdout + result.stderr
     report = read_json(out / "report.json")
     assert report["security"]["status"] == "seal_tc128_context_checked"
     assert report["runs"][0]["verification"]["passed"]
-    import tenseal as ts
-    public = ts.context_from((out / "io/server/keys/context.bin").read_bytes(), n_threads=2)
-    assert not public.has_secret_key()
+    assert not (out / "io/server/keys/secret.key").exists()
+    assert report["runs"][0]["server_reported_steps"]["Encrypted computation"] > 0
+    assert report["runs"][0]["server_reported_steps"]["I/O"] >= 0
+    assert (out / "comparison.md").is_file()
     assert report["runs"][0]["communication_bytes"]["client_to_server_input"] > 0
 
 

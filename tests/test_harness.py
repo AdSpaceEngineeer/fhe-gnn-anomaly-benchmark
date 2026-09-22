@@ -16,14 +16,14 @@ from harness.verify_result import verify
 
 
 def test_frozen_toy_integrity():
-    b = load_bundle(ROOT / "artifacts" / "toy-v1")
-    assert b["registered"]
+    b = load_bundle(ROOT / "tests/fixtures/arithmetic")
+    assert not b["registered"]  # legacy arithmetic fixture is not a benchmark workload
     assert b["public"]["sensitive_indices"] == [4, 6, 7]
     assert "features" not in b["public"] and "labels" not in b["public"]
 
 
 def test_tampered_artifact_rejected(tmp_path):
-    shutil.copytree(ROOT / "artifacts" / "toy-v1", tmp_path / "toy")
+    shutil.copytree(ROOT / "tests/fixtures/arithmetic", tmp_path / "toy")
     p = tmp_path / "toy" / "weights.json"
     p.write_text("{}")
     with pytest.raises(ValueError, match="checksum"):
@@ -32,7 +32,7 @@ def test_tampered_artifact_rejected(tmp_path):
 
 def test_compressed_bundle_preserves_identity(tmp_path):
     folder = tmp_path / "toy"
-    shutil.copytree(ROOT / "artifacts" / "toy-v1", folder)
+    shutil.copytree(ROOT / "tests/fixtures/arithmetic", folder)
     original = load_bundle(folder)
     path = folder / "data.json"
     with gzip.open(str(path) + ".gz", "wb") as handle:
@@ -41,7 +41,7 @@ def test_compressed_bundle_preserves_identity(tmp_path):
         load_bundle(folder)
     path.unlink()
     compressed = load_bundle(folder)
-    assert compressed["registered"]
+    assert not compressed["registered"]
     assert compressed["manifest_sha256"] == original["manifest_sha256"]
     assert compressed["reference"] == original["reference"]
     assert compressed["data"] == original["data"]
@@ -71,7 +71,7 @@ def test_frozen_trained_baseline():
 
 def test_tampered_checkpoint_rejected(tmp_path):
     folder = tmp_path / "toy"
-    shutil.copytree(ROOT / "artifacts" / "toy-v1", folder)
+    shutil.copytree(ROOT / "tests/fixtures/arithmetic", folder)
     (folder / "scam_list_gcn.pt").write_bytes(b"not the expected checkpoint")
     with pytest.raises(ValueError, match="checkpoint checksum"):
         load_bundle(folder)
@@ -143,12 +143,14 @@ def test_payload_paths_cannot_escape(tmp_path):
 def test_pipeline_repeat_and_client_server_split(tmp_path):
     out = tmp_path / "run"
     command = [sys.executable, str(ROOT / "harness/run_submission.py"), "--submission", "plaintext_debug",
+               "--artifacts", str(ROOT / "tests/fixtures/arithmetic"),
                "--debug-plaintext", "--num-runs", "2", "--threads", "1", "--out", str(out)]
     result = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True, timeout=120)
     assert result.returncode == 0, result.stdout + result.stderr
     r = read_json(out / "report.json")
     assert r["status"] == "passed" and len(r["runs"]) == 2
     assert not r["eligible_for_comparison"]
+    assert (out / "comparison.md").is_file()
     for run in r["runs"]:
         assert run["verification"]["max_absolute_error"] < 1e-9
         assert run["stages"]["evaluate"]["wall_seconds"] > 0
@@ -169,6 +171,45 @@ def test_wrong_submission_fails_with_report(tmp_path):
                        "    def decrypt(self, *args): return [float('nan')]*3\n")
     out = tmp_path / "out"
     r = subprocess.run([sys.executable, str(ROOT / "harness/run_submission.py"), "--submission", str(adapter),
+                        "--artifacts", str(ROOT / "tests/fixtures/arithmetic"),
                         "--debug-plaintext", "--out", str(out)], capture_output=True, text=True, timeout=120)
     assert r.returncode != 0
     assert read_json(out / "report.json")["status"] == "error"
+
+
+@pytest.mark.parametrize("valid", [True, False])
+def test_optional_timings_end_to_end(tmp_path, valid):
+    folder = tmp_path / "timed_debug"
+    folder.mkdir()
+    timings = '{"Encrypted computation": 0.01, "I/O": 0.02}' if valid else '{"I/O": -1}'
+    adapter = folder / "adapter.py"
+    adapter.write_text(
+        "from submissions.plaintext_debug.adapter import Adapter as Base\n"
+        "class Adapter(Base):\n"
+        "    def evaluate(self, encrypted, public, keys, threads, intermediate_dir):\n"
+        "        result = super().evaluate(encrypted, public, keys, threads, intermediate_dir)\n"
+        f"        (intermediate_dir / 'server_reported_steps.json').write_text({timings!r})\n"
+        "        return result\n", encoding="utf-8")
+    out = tmp_path / "results"
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "harness/run_submission.py"), "--submission", str(adapter),
+         "--artifacts", str(ROOT / "tests/fixtures/arithmetic"), "--debug-plaintext",
+         "--threads", "1", "--out", str(out)], capture_output=True, text=True, timeout=120)
+    assert result.returncode == 0, result.stdout + result.stderr
+    report = read_json(out / "report.json")
+    run = report["runs"][0]
+    assert run["verification"]["passed"]
+    assert run["storage_bytes"]["persisted_intermediates"] == 0
+    stage = run["stages"]["evaluate"]
+    assert stage["harness_file_io_seconds"] >= 0
+    assert stage["adapter_call_seconds"] > 0
+    assert stage["wall_seconds"] >= stage["adapter_call_seconds"]
+    table = (out / "comparison.md").read_text(encoding="utf-8")
+    if valid:
+        assert run["server_reported_steps"] == json.loads(timings)
+        assert not run["server_timing_warnings"]
+        assert "| Encrypted computation | 0.01 | 1/1 |" in table
+    else:
+        assert run["server_reported_steps"] is None
+        assert run["server_timing_warnings"]
+        assert "Ignored optional server timings" in table
