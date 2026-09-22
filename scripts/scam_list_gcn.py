@@ -14,10 +14,15 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import random
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple
+
+# Apply shared-server defaults before importing numerical libraries.
+for _name in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
+    os.environ.setdefault(_name, "2")
 
 import numpy as np
 import pandas as pd
@@ -604,6 +609,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    torch.set_num_threads(int(os.environ["OMP_NUM_THREADS"]))
     config = RunConfig(
         num_events=args.num_events,
         num_accounts=args.num_accounts,

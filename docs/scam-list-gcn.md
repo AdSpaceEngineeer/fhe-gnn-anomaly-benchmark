@@ -32,11 +32,12 @@ Training is plaintext and is not part of future FHE timing.
 | `prior_report_count` | Prior complaint/report count for the source account | Sensitive feature |
 | `scam_label` | Ground-truth event label, `1` for scam/anomaly | Evaluation only |
 
-The graph connects events that share a source or destination account within a
-small temporal window. This creates the `Network` artifact. Encoded public and
+The graph connects up to three neighboring events in each time-sorted source
+account or destination account sequence. This is an event-count window, not a
+fixed number of hours. This creates the `Network` artifact. Encoded public and
 sensitive columns create `Attributes`. `scam_label` creates `Label`.
 
-## Sensitive fields for future FHE inference
+## Sensitive fields for FHE inference
 
 | Raw field | Encoded feature | Why selected |
 |---|---|---|
@@ -45,7 +46,7 @@ sensitive columns create `Attributes`. `scam_label` creates `Label`.
 | `prior_report_count` | `prior_report_count_z` | Sensitive complaint/risk-intelligence history |
 
 These fields are encoded into numeric model features first, then encrypted for
-future FHE inference. The first benchmark version keeps graph topology public.
+FHE inference. The first benchmark version keeps graph topology public.
 
 ## Simplified GCN layers
 
@@ -67,24 +68,28 @@ activation(z) = z + 0.125z^2
 
 ## Plaintext baseline result
 
+These are the user's reported training-run results. The original matching
+artifact bundle is pending import; the independent runnable toy does not
+reproduce these numbers.
+
 ```text
 events=100000
 edges=740632
 scam_rate=0.0406
 features=8
 sensitive=['transfer_amount_z', 'source_daily_total_amount_z', 'prior_report_count_z']
-validation_threshold=4.344190838049405
+validation_threshold=4.344178763046936
 ```
 
 | Split | Accuracy | Precision | Recall | F1 | ROC-AUC | Average precision |
 |---|---:|---:|---:|---:|---:|---:|
-| Validation | 0.992625 | 0.916928 | 0.900000 | 0.908385 | 0.997928 | 0.957634 |
-| Test | 0.993250 | 0.933419 | 0.897783 | 0.915254 | 0.998697 | 0.970149 |
+| Validation | 0.992625 | 0.916928 | 0.900000 | 0.908385 | 0.997928 | 0.957631 |
+| Test | 0.993250 | 0.933419 | 0.897783 | 0.915254 | 0.998697 | 0.970152 |
 
-## Run command
+## Maintainer training command (not required for benchmark submissions)
 
 ```bash
-python -m pip install -r requirements-scam-list-gcn.txt
+python -m pip install -r requirements-training.txt
 python scripts/scam_list_gcn.py --outdir runs/scam_list_gcn --num-events 100000 --num-accounts 20000 --epochs 80
 ```
 

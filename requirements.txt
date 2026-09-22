@@ -1,0 +1,5 @@
+# Python 3.10-3.12; scheme-independent inference harness.
+numpy==2.2.6
+scipy==1.15.3
+scikit-learn==1.6.1
+psutil==7.0.0

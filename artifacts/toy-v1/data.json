@@ -1,0 +1,95 @@
+{
+  "features": [
+    [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.75,
+      -0.4,
+      1.2,
+      0.4
+    ],
+    [
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.2,
+      0.1,
+      0.3,
+      -0.2
+    ],
+    [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      1.4,
+      0.5,
+      1.6,
+      0.8
+    ]
+  ],
+  "feature_names": [
+    "channel_wallet",
+    "channel_bank_transfer",
+    "channel_card",
+    "channel_instant_pay",
+    "transfer_amount_z",
+    "source_daily_txn_count_z",
+    "source_daily_total_amount_z",
+    "prior_report_count_z"
+  ],
+  "sensitive_indices": [
+    4,
+    6,
+    7
+  ],
+  "labels": [
+    0,
+    0,
+    1
+  ],
+  "splits": {
+    "train": [],
+    "val": [],
+    "test": [
+      0,
+      1,
+      2
+    ]
+  },
+  "adjacency": {
+    "rows": [
+      0,
+      0,
+      1,
+      1,
+      1,
+      2,
+      2
+    ],
+    "cols": [
+      0,
+      1,
+      0,
+      1,
+      2,
+      1,
+      2
+    ],
+    "values": [
+      0.5,
+      0.4082482904638631,
+      0.4082482904638631,
+      0.3333333333333333,
+      0.4082482904638631,
+      0.4082482904638631,
+      0.5
+    ]
+  },
+  "preprocessing": {
+    "source": "fixed normalized numbers for arithmetic coverage; no fitted scaler"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "format_version": 1,
+  "id": "toy-v1",
+  "purpose": "arithmetic_smoke_test",
+  "activation": "poly2",
+  "atol": 0.001,
+  "rtol": 0.001,
+  "weights_provenance": "fixed random initialization, seed 2026; not trained",
+  "sha256": {
+    "data.json": "1b48e3daf11f4844df03ec3bfe1df7712fe1783364ac08fcf38e3c45c481eeaf",
+    "weights.json": "75a25727e1d47229cd6f83972223df011fe4ffc47a53d543df58658507d02abc",
+    "reference.json": "373b0e2c08a14fe08ce3397578062053ebc5f606d44083f46f151a458c272672"
+  }
+}

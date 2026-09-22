@@ -1,0 +1,257 @@
+{
+  "format_version": 1,
+  "status": "passed",
+  "submission": "toy_ckks",
+  "adapter_sha256": "b349b9cd51203759027c1fd89770955702134f1042717304b81338fa74a4263f",
+  "artifact_id": "toy-v1",
+  "artifact_manifest_sha256": "5be97bdd71952e3a9e1786ea87b47e0027011d67909901d6da0cb062826192f4",
+  "registered_artifacts": true,
+  "purpose": "arithmetic_smoke_test",
+  "threads_requested": 2,
+  "key_policy": "fresh_per_invocation_reused_across_repeats",
+  "runs": [
+    {
+      "index": 0,
+      "stages": {
+        "encrypt": {
+          "wall_seconds": 9.119496200000867,
+          "sampled_process_tree_peak_rss_bytes": 408170496,
+          "memory_sample_interval_seconds": 0.01,
+          "operation_and_io_seconds": 8.760911799996393,
+          "process_lifetime_peak_rss_bytes": 412151808
+        },
+        "evaluate": {
+          "wall_seconds": 12.854204100003699,
+          "sampled_process_tree_peak_rss_bytes": 951205888,
+          "memory_sample_interval_seconds": 0.01,
+          "operation_and_io_seconds": 12.471903800003929,
+          "process_lifetime_peak_rss_bytes": 949018624
+        },
+        "decrypt": {
+          "wall_seconds": 7.840970699995523,
+          "sampled_process_tree_peak_rss_bytes": 347578368,
+          "memory_sample_interval_seconds": 0.01,
+          "operation_and_io_seconds": 7.482150900003035,
+          "process_lifetime_peak_rss_bytes": 368005120
+        }
+      },
+      "verification": {
+        "passed": true,
+        "absolute_tolerance": 0.001,
+        "relative_tolerance": 0.001,
+        "max_absolute_error": 0.000034580050526367145,
+        "mean_absolute_error": 0.000016731782353625324,
+        "prediction_agreement": 1,
+        "quality": {
+          "threshold": 1,
+          "accuracy": 1,
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "roc_auc": 1,
+          "average_precision": 1
+        },
+        "plaintext_quality": {
+          "threshold": 1,
+          "accuracy": 1,
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "roc_auc": 1,
+          "average_precision": 1
+        }
+      },
+      "num_nodes_computed": 3,
+      "num_test_nodes": 3,
+      "inference_wall_seconds": 29.81467100000009,
+      "throughput_nodes_per_second": 0.23338667852637696,
+      "end_to_end_nodes_per_second": 0.10062160337103807,
+      "storage_bytes": {
+        "public_and_evaluation_keys": 81205240,
+        "client_private_keys": 8696585,
+        "encrypted_input": 47466149,
+        "encrypted_output": 1573323,
+        "persisted_intermediates": 0
+      },
+      "communication_bytes": {
+        "client_to_server_input": 47466149,
+        "server_to_client_result": 1573323,
+        "public_workload_upload_once": 2833,
+        "key_upload_once": 81205240,
+        "key_upload_amortized": 40602620
+      },
+      "amortized_keygen_seconds": 5.013830999996571
+    },
+    {
+      "index": 1,
+      "stages": {
+        "encrypt": {
+          "wall_seconds": 9.182552600002964,
+          "sampled_process_tree_peak_rss_bytes": 413138944,
+          "memory_sample_interval_seconds": 0.01,
+          "operation_and_io_seconds": 8.813874100000248,
+          "process_lifetime_peak_rss_bytes": 413483008
+        },
+        "evaluate": {
+          "wall_seconds": 12.973697299996275,
+          "sampled_process_tree_peak_rss_bytes": 949772288,
+          "memory_sample_interval_seconds": 0.01,
+          "operation_and_io_seconds": 12.578108699992299,
+          "process_lifetime_peak_rss_bytes": 949051392
+        },
+        "decrypt": {
+          "wall_seconds": 7.833954400004586,
+          "sampled_process_tree_peak_rss_bytes": 357044224,
+          "memory_sample_interval_seconds": 0.01,
+          "operation_and_io_seconds": 7.466456599999219,
+          "process_lifetime_peak_rss_bytes": 368242688
+        }
+      },
+      "verification": {
+        "passed": true,
+        "absolute_tolerance": 0.001,
+        "relative_tolerance": 0.001,
+        "max_absolute_error": 0.00003455855354239645,
+        "mean_absolute_error": 0.00001672491252213461,
+        "prediction_agreement": 1,
+        "quality": {
+          "threshold": 1,
+          "accuracy": 1,
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "roc_auc": 1,
+          "average_precision": 1
+        },
+        "plaintext_quality": {
+          "threshold": 1,
+          "accuracy": 1,
+          "precision": 1,
+          "recall": 1,
+          "f1": 1,
+          "roc_auc": 1,
+          "average_precision": 1
+        }
+      },
+      "num_nodes_computed": 3,
+      "num_test_nodes": 3,
+      "inference_wall_seconds": 29.990204300003825,
+      "throughput_nodes_per_second": 0.23123708921441088,
+      "end_to_end_nodes_per_second": 0.10003266299855175,
+      "storage_bytes": {
+        "public_and_evaluation_keys": 81205240,
+        "client_private_keys": 8696585,
+        "encrypted_input": 47467336,
+        "encrypted_output": 1573323,
+        "persisted_intermediates": 0
+      },
+      "communication_bytes": {
+        "client_to_server_input": 47467336,
+        "server_to_client_result": 1573323,
+        "public_workload_upload_once": 0,
+        "key_upload_once": 0,
+        "key_upload_amortized": 40602620
+      },
+      "amortized_keygen_seconds": 5.013830999996571
+    }
+  ],
+  "memory_method": "stage process lifetime high-water RSS plus 10ms sampled process-tree RSS",
+  "communication_method": "serialized payload bytes; no network transport timing",
+  "harness_sha256": {
+    "__init__.py": "6381adaf52d323106672d071b56f1a91cde3083c2b9df4403fab4d4977ef44cb",
+    "generate_input.py": "55cc493584f3b2c0a8e82eb50cd1b953d12d41834873e9c2e672f027b7130131",
+    "metrics.py": "09dbddf25cd55fa59af692be4ad358cfdd5502616a6e630adff255af8f229912",
+    "model.py": "46c91fa49f7836139fc679ac1fa6f457d54ea0b95c3abb0866be1731d5f346d6",
+    "params.py": "9ecf8feadc3845575bc486bd5f4aa6a1825210734ec7448e1c50b6d180e1fcf9",
+    "run_submission.py": "80421a6f83360161f6c53a8cd574d21c1f8ed05749bd68fc1ff71923e741fb87",
+    "security.py": "bde2806382b1a34099577a85be5da9c2215d1c79b5325ca88360f7ac3e3fb058",
+    "utils.py": "ec1104f2451f520dab100048835c7b487224dc72356a4918fc1fff10d3d55e62",
+    "verify_result.py": "0c6a5cb670098843adc7be25cce1f8c21599292284696fc0788a27cc1a17feb0",
+    "worker.py": "e0f139e8401a4348c4d8ffa2d681f65cd37e815e118774968204977f7b865cda"
+  },
+  "submission_source_sha256": {
+    "adapter.py": "b349b9cd51203759027c1fd89770955702134f1042717304b81338fa74a4263f",
+    "README.md": "ccd472ef11f3e6c5120f98e1964e6eb56c9845a007e54fd9917ecaa3e43ec79f",
+    "requirements.txt": "81eaf7b671e1357d55b79f62301f0d24f8b05bd53562139c6d02d85c6e4d21fd"
+  },
+  "description": {
+    "name": "toy_ckks",
+    "is_fhe": true,
+    "scheme": "CKKS",
+    "backend": "TenSEAL 0.3.16 / SEAL",
+    "security": {
+      "classical_bits": 128,
+      "validator": "seal_tc128",
+      "evidence": "SEAL default tc128 validation; ternary secret, standard SEAL error distribution; https://github.com/microsoft/SEAL/blob/v4.1.2/native/src/seal/util/hestdparms.h"
+    },
+    "parameters": {
+      "poly_modulus_degree": 32768,
+      "coeff_mod_bit_sizes": [
+        60,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        60
+      ],
+      "scale_bits": 40
+    },
+    "encoding": "CKKS real scalars after frozen client preprocessing",
+    "packing": "one scalar per ciphertext, deliberately unoptimized",
+    "activation": "exact circuit z + 0.125*z*z, approximate CKKS arithmetic",
+    "limitations": "At most 8 event nodes; no bootstrapping; not intended for full-scale inference"
+  },
+  "security": {
+    "status": "seal_tc128_context_checked",
+    "eligible": true,
+    "classical_bits": 128,
+    "actual_poly_modulus_degree": 32768,
+    "actual_coeff_mod_bit_sizes": [
+      60,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      40,
+      60
+    ],
+    "scope": "SEAL default tc128 parameter validation; implementation and threat assumptions still require review"
+  },
+  "keygen": {
+    "wall_seconds": 10.027661999993143,
+    "sampled_process_tree_peak_rss_bytes": 842047488,
+    "memory_sample_interval_seconds": 0.01,
+    "operation_and_io_seconds": 9.64031149999937,
+    "process_lifetime_peak_rss_bytes": 841621504
+  },
+  "security_check": {
+    "wall_seconds": 16.186962000007043,
+    "sampled_process_tree_peak_rss_bytes": 946196480,
+    "memory_sample_interval_seconds": 0.01,
+    "operation_and_io_seconds": 15.7589724999998,
+    "process_lifetime_peak_rss_bytes": 954773504
+  },
+  "eligible_for_comparison": true,
+  "timing_summary": {
+    "mean_inference_wall_seconds": 29.902437650001957,
+    "repeat_count": 2
+  },
+  "network_transfer_seconds": null,
+  "key_rotation_seconds": null,
+  "comparison_scope": "Only identical artifact IDs and manifests; toy results are not the trained baseline"
+}
