@@ -1,129 +1,173 @@
-"""Copy this directory to submissions/my_method: the same frozen GCN, real CKKS."""
+"""Incomplete GCN CKKS example. The encrypted ReLU method must be supplied."""
+import argparse
 import json
-from pathlib import Path
-import tempfile
-import time
-import numpy as np
-import tenseal.sealapi as seal
-from packed_ckks import (DEGREE, CHAIN, SCALE, STRIDE, SLOTS, ROWS, SENSITIVE, LAYERS,
-                         Files, Arithmetic, parameters, context)
+import sys
+
+
+class UnsupportedOperationError(NotImplementedError):
+    pass
+
+
+RELU_MESSAGE = (
+    'Unsupported operation: encrypted ReLU. Replace the encrypted_relu() '
+    'placeholder in this submission with your encrypted activation method. '
+    'Do not decrypt inside the evaluator.'
+)
+
+
+def backend():
+    # Metadata and the readiness check do not require the optional FHE package.
+    import tenseal
+    return tenseal
+
+
+def add_terms(terms):
+    iterator = iter(terms)
+    total = next(iterator)
+    for term in iterator:
+        total = total + term
+    return total
 
 
 class Adapter:
+    # Set True only after implementing encrypted_relu and reviewing the full
+    # circuit's parameter requirements. This flag supplies no activation method.
+    activation_ready = False
+    parameters = dict(poly_modulus_degree=8192, coeff_mod_bit_sizes=[60, 40, 40, 60])
+    scale = 2 ** 40
+
+    def configure(self, workload, threads):
+        if workload != 'gcn':
+            raise ValueError('This CKKS example supports GCN only')
+        if type(threads) is not int or threads < 1:
+            raise ValueError('threads must be a positive integer')
+        self.threads = threads
+
     def describe(self):
-        return {"name": Path(__file__).resolve().parent.name, "is_fhe": True, "scheme": "CKKS",
-                "backend": "TenSEAL 0.3.16 native Microsoft SEAL bindings",
-                "security": {"classical_bits": 128, "validator": "seal_tc128_native",
-                             "evidence": "Explicit SEAL TC128 context; standard ternary secret and error sampling; https://github.com/microsoft/SEAL/blob/v4.1.2/native/src/seal/util/hestdparms.h"},
-                "parameters": {"poly_modulus_degree": DEGREE, "coeff_mod_bit_sizes": CHAIN, "scale_bits": 40},
-                "encoding": "Frozen normalized sensitive columns, CKKS real values",
-                "packing": "256 event rows per ciphertext, 64 slots per row; public sparse graph unchanged",
-                "activation": "z + 0.125*z*z, approximate CKKS arithmetic",
-                "limitations": "Readable correctness example; no bootstrapping or performance claims; large graph inference can be very slow"}
+        return dict(name='toy_ckks', supported_workloads=['gcn'], is_fhe=True,
+                    scheme='CKKS', parameters=self.parameters,
+                    security=dict(classical_bits=128, validator='seal_tc128',
+                                  evidence='Microsoft SEAL default tc128 validation; '
+                                  '8192-degree context with 200 total coefficient-modulus bits'),
+                    encoding='Real-valued CKKS; global scale ' + str(self.scale),
+                    packing='One scalar per CKKS vector; no cross-node packing',
+                    activation='Submitter-defined encrypted ReLU; placeholder in this example',
+                    unsupported_operations=[] if self.activation_ready else [RELU_MESSAGE])
+
+    def thread_report(self, stage, requested_threads):
+        return dict(compute_threads=self.threads, worker_processes=1,
+                    threading_model='Sequential Python loops; each TenSEAL context uses '
+                    'the configured n_threads; no submission worker processes')
 
     def keygen(self, threads):
-        with tempfile.TemporaryDirectory(prefix="scam-ckks-keygen-") as temporary:
-            files = Files(temporary)
-            p = parameters()
-            ctx = context(p)
-            keygen = seal.KeyGenerator(ctx)
-            public, relin, galois = seal.PublicKey(), seal.RelinKeys(), seal.GaloisKeys()
-            keygen.create_public_key(public)
-            keygen.create_relin_keys(relin)
-            elements = [pow(3, 1 << bit, 2 * DEGREE) for bit in range(SLOTS.bit_length() - 1)]
-            keygen.create_galois_keys(elements, galois)
-            encoded_parameters, encoded_public = files.dump(p), files.dump(public)
-            private = {"parameters.bin": encoded_parameters, "public.key": encoded_public,
-                       "secret.key": files.dump(keygen.secret_key())}
-            published = {"parameters.bin": encoded_parameters, "public.key": encoded_public,
-                         "relin.key": files.dump(relin), "galois.key": files.dump(galois)}
-            return private, published
+        ts = backend()
+        context = ts.context(ts.SCHEME_TYPE.CKKS, n_threads=threads, **self.parameters)
+        context.global_scale = self.scale
+        context.generate_relin_keys()
+        private = context.serialize(save_public_key=True, save_secret_key=True,
+                                    save_galois_keys=False, save_relin_keys=False)
+        public = context.serialize(save_public_key=True, save_secret_key=False,
+                                   save_galois_keys=False, save_relin_keys=True)
+        return {'context.bin': private}, {'context.bin': public}
 
     def encrypt(self, sensitive, private_files, threads):
-        values = np.asarray(sensitive, dtype=float)
-        if values.ndim != 2 or values.shape[1] != 3 or not np.isfinite(values).all():
-            raise ValueError("Expected finite N x 3 sensitive features")
-        result = {"shape.json": json.dumps({"nodes": len(values), "stride": STRIDE, "rows": ROWS}).encode()}
-        with tempfile.TemporaryDirectory(prefix="scam-ckks-encrypt-") as temporary:
-            files = Files(temporary)
-            ctx = context(files.load(seal.EncryptionParameters, private_files["parameters.bin"]))
-            public_key = files.load(seal.PublicKey, private_files["public.key"], ctx)
-            encoder, encryptor = seal.CKKSEncoder(ctx), seal.Encryptor(ctx, public_key)
-            for block, start in enumerate(range(0, len(values), ROWS)):
-                count = min(ROWS, len(values) - start)
-                slots = np.zeros((ROWS, STRIDE))
-                slots[:count, SENSITIVE] = values[start:start + count]
-                plain, cipher = seal.Plaintext(), seal.Ciphertext()
-                encoder.encode(slots.ravel().tolist(), SCALE, plain)
-                encryptor.encrypt(plain, cipher)
-                result[f"{block:06d}.bin"] = files.dump(cipher)
-        return result
+        ts = backend()
+        context = ts.context_from(private_files['context.bin'], n_threads=threads)
+        if any(len(row) != 3 for row in sensitive):
+            raise ValueError('Expected three sensitive features per node')
+        return {'input_%08d_%d.bin' % (i, j): ts.ckks_vector(context, [float(value)]).serialize()
+                for i, row in enumerate(sensitive) for j, value in enumerate(row)}
+
+    def encrypted_relu(self, ciphertext, public_context):
+        """REPLACE THIS PLACEHOLDER: return an encrypted activation result.
+
+        Input/output: a one-element CKKS vector under the evaluation key set.
+        Only a public context is available. Return a compatible ciphertext for
+        subsequent GCN arithmetic. The reference function is max(z, 0).
+        No polynomial, lookup table, identity fallback or client interaction is
+        implemented here. Describe and validate the method you supply.
+        """
+        raise UnsupportedOperationError(RELU_MESSAGE)
 
     def evaluate(self, encrypted, public, public_files, threads, intermediate_dir):
-        if public["activation"] != "poly2" or public["sensitive_indices"] != SENSITIVE or public["feature_count"] != 8:
-            raise ValueError("Expected the published eight-feature poly2 GCN")
-        if set(public_files) != {"parameters.bin", "public.key", "relin.key", "galois.key"}:
-            raise ValueError("Evaluator receives only public parameters and evaluation keys")
-        shape = json.loads(encrypted["shape.json"])
-        n = public["node_count"]
-        if shape != {"nodes": n, "stride": STRIDE, "rows": ROWS}:
-            raise ValueError("Ciphertext layout does not match the workload")
-        start = time.perf_counter()
-        arithmetic_seconds = 0.0
-        with tempfile.TemporaryDirectory(prefix="scam-ckks-evaluate-") as temporary:
-            files = Files(temporary)
-            ctx = context(files.load(seal.EncryptionParameters, public_files["parameters.bin"]))
-            engine = Arithmetic(ctx, files.load(seal.PublicKey, public_files["public.key"], ctx),
-                                files.load(seal.RelinKeys, public_files["relin.key"], ctx),
-                                files.load(seal.GaloisKeys, public_files["galois.key"], ctx))
-            blocks = []
-            for block, offset in enumerate(range(0, n, ROWS)):
-                cipher = files.load(seal.Ciphertext, encrypted[f"{block:06d}.bin"], ctx)
-                t = time.perf_counter()
-                slots = np.zeros((ROWS, STRIDE))
-                count = min(ROWS, n - offset)
-                slots[:count, public["public_indices"]] = np.asarray(public["x_public"][offset:offset + count])
-                engine.evaluator.add_plain_inplace(cipher, engine.plain(slots.ravel(), cipher.parms_id()))
-                blocks.append(cipher)
-                arithmetic_seconds += time.perf_counter() - t
-            for index, name in enumerate(LAYERS):
-                print(f"[toy_ckks] {name}: {n} events, {len(blocks)} ciphertext blocks", flush=True)
-                t = time.perf_counter()
-                blocks = engine.project(blocks, public["weights"][name + ".weight"])
-                blocks = engine.aggregate(blocks, public["adjacency"])
-                blocks = [engine.add_bias(v, public["weights"][name + ".bias"]) for v in blocks]
-                if index < 3:
-                    blocks = [engine.activation(v) for v in blocks]
-                arithmetic_seconds += time.perf_counter() - t
-            result = {"shape.json": encrypted["shape.json"]}
-            for block, offset in enumerate(range(0, n, ROWS)):
-                original = files.load(seal.Ciphertext, encrypted[f"{block:06d}.bin"], ctx)
-                t = time.perf_counter()
-                score = engine.score(blocks[block], original, min(ROWS, n - offset))
-                arithmetic_seconds += time.perf_counter() - t
-                result[f"{block:06d}.bin"] = files.dump(score)
-            total = time.perf_counter() - start
-            timings = {"Encrypted computation": arithmetic_seconds, "I/O": files.seconds,
-                       "Context and other setup": max(0.0, total - arithmetic_seconds - files.seconds), "Total": total}
-        # BERT-compatible optional flat dictionary of step name -> seconds.
-        timing_path = Path(intermediate_dir) / "server_reported_steps.json"
-        timing_path.write_text(json.dumps(timings, indent=2) + "\n", encoding="utf-8")
-        return result
+        if public['workload'] != 'gcn' or public['activation'] != 'relu':
+            raise ValueError('Expected the frozen ReLU GCN workload')
+        ts = backend()
+        context = ts.context_from(public_files['context.bin'], n_threads=threads)
+        if context.has_secret_key():
+            raise ValueError('Evaluator context must not contain secret keys')
+        n = public['node_count']
+        sensitive = public['sensitive_indices']
+        original = [[ts.ckks_vector_from(context, encrypted['input_%08d_%d.bin' % (i, j)])
+                     for j in range(3)] for i in range(n)]
+        hidden = original
+        graph = public['adjacency']
+        neighbours = [[] for _ in range(n)]
+        for row, col, value in zip(graph['rows'], graph['cols'], graph['values']):
+            neighbours[row].append((col, value))
+        layers = ('encoder_1', 'encoder_2', 'decoder_1', 'decoder_2')
+        for layer_index, name in enumerate(layers):
+            weights, bias = public['weights'][name + '.weight'], public['weights'][name + '.bias']
+            projected = []
+            for i in range(n):
+                row = []
+                for j in range(len(bias)):
+                    if layer_index == 0:
+                        value = add_terms(hidden[i][k] * weights[column][j]
+                                          for k, column in enumerate(sensitive))
+                        value = value + sum(public['x_public'][i][k] * weights[column][j]
+                                            for k, column in enumerate(public['public_indices']))
+                    else:
+                        value = add_terms(hidden[i][k] * weights[k][j] for k in range(len(hidden[i])))
+                    row.append(value)
+                projected.append(row)
+            hidden = [[add_terms(projected[col][j] * coefficient for col, coefficient in neighbours[i]) + bias[j]
+                       for j in range(len(bias))] for i in range(n)]
+            if layer_index < 3:
+                hidden = [[self.encrypted_relu(value, context) for value in row] for row in hidden]
+        results = {}
+        for i in range(n):
+            errors = [hidden[i][column] - original[i][k] for k, column in enumerate(sensitive)]
+            score = add_terms(error * error for error in errors) * (1.0 / len(sensitive))
+            results['score_%08d.bin' % i] = score.serialize()
+        return results
 
     def decrypt(self, encrypted_scores, private_files, threads):
-        shape = json.loads(encrypted_scores["shape.json"])
-        if shape["stride"] != STRIDE or shape["rows"] != ROWS:
-            raise ValueError("Unexpected score layout")
-        scores = []
-        with tempfile.TemporaryDirectory(prefix="scam-ckks-decrypt-") as temporary:
-            files = Files(temporary)
-            ctx = context(files.load(seal.EncryptionParameters, private_files["parameters.bin"]))
-            secret = files.load(seal.SecretKey, private_files["secret.key"], ctx)
-            decryptor, encoder = seal.Decryptor(ctx, secret), seal.CKKSEncoder(ctx)
-            for block, offset in enumerate(range(0, shape["nodes"], ROWS)):
-                cipher = files.load(seal.Ciphertext, encrypted_scores[f"{block:06d}.bin"], ctx)
-                plain = seal.Plaintext()
-                decryptor.decrypt(cipher, plain)
-                values = encoder.decode_double(plain)
-                scores.extend(values[i * STRIDE] for i in range(min(ROWS, shape["nodes"] - offset)))
-        return scores
+        ts = backend()
+        context = ts.context_from(private_files['context.bin'], n_threads=threads)
+        return [float(ts.ckks_vector_from(context, encrypted_scores[name]).decrypt()[0])
+                for name in sorted(encrypted_scores)]
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--demo', action='store_true', help='Run a three-value crypto round trip, not GCN inference')
+    parser.add_argument('--threads', type=int, default=2)
+    args = parser.parse_args(argv)
+    adapter = Adapter()
+    adapter.configure('gcn', args.threads)
+    try:
+        if not args.demo:
+            if not adapter.activation_ready:
+                raise UnsupportedOperationError(RELU_MESSAGE)
+            print('Activation declared implemented; run the benchmark to verify the submission.')
+            return 0
+        private, public = adapter.keygen(args.threads)
+        sample = [[0.75, 1.20, 0.40]]
+        encrypted = adapter.encrypt(sample, private, args.threads)
+        # Round-trip input values, not GCN scores. No key material is printed/saved.
+        decoded = adapter.decrypt(encrypted, private, args.threads)
+        print(json.dumps(dict(demo='Encryption/decryption only; not a benchmark result',
+                              plaintext=sample[0], decrypted=decoded), indent=2), flush=True)
+        ts = backend()
+        context = ts.context_from(public['context.bin'], n_threads=args.threads)
+        first = ts.ckks_vector_from(context, encrypted['input_00000000_0.bin'])
+        adapter.encrypted_relu(first, context)
+        return 0
+    except UnsupportedOperationError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    sys.exit(main())

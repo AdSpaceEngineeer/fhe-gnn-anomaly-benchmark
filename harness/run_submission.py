@@ -8,15 +8,16 @@ import time
 import uuid
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from harness.params import ROOT, DEFAULT_THREADS, DEFAULT_ARTIFACTS, KEY_POLICY
+from harness.params import ROOT, DEFAULT_THREADS, WORKLOADS, KEY_POLICY
 from harness.utils import read_json, write_json, sha256, directory_bytes, run_measured, set_threads
 from harness.reporting import SERVER_TIMINGS, read_server_timings, write_comparison
 
 
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--submission", default="toy_ckks", help="Name in submissions/ or path to adapter.py")
-    p.add_argument("--artifacts", default=str(DEFAULT_ARTIFACTS), help="Maintainer override; only the published frozen workload is registered")
+    p.add_argument("--workload", required=True, choices=sorted(WORKLOADS))
+    p.add_argument("--submission", required=True, help="Name in submissions/ or path to adapter.py")
+    p.add_argument("--artifacts", help="Maintainer override; registered artifacts are selected by workload")
     p.add_argument("--num-runs", type=int, default=1)
     p.add_argument("--threads", type=int, default=DEFAULT_THREADS)
     p.add_argument("--timeout-seconds", type=float, default=86400, help="Maximum wall seconds per stage; default 24 hours")
@@ -42,22 +43,24 @@ def main(argv=None):
     adapter = adapter.resolve()
     if not adapter.is_file():
         raise ValueError("Submission not found: " + str(adapter))
-    bundle = load_bundle(args.artifacts)
-    print("[harness] Workload: %s (%d events); weights and graph supplied automatically" %
-          (bundle["manifest"]["id"], bundle["public"]["node_count"]), flush=True)
+    artifacts = args.artifacts or ROOT / 'artifacts' / WORKLOADS[args.workload]['artifact_id']
+    bundle = load_bundle(artifacts, args.workload)
+    print("[harness] Workload: %s (%d %s); frozen weights and graphs loaded" %
+          (bundle["manifest"]["id"], bundle["public"]["node_count"], WORKLOADS[args.workload]['node_unit']), flush=True)
     out = Path(args.out) if args.out else ROOT / "measurements" / (time.strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8])
     out = out.resolve()
     out.mkdir(parents=True, exist_ok=False)
     io = out / "io"
     io.mkdir()
-    report = {"format_version": 1, "status": "running", "submission": adapter.parent.name,
+    report = {"format_version": 2, "workload": args.workload, "status": "running", "submission": adapter.parent.name,
               "adapter_sha256": sha256(adapter), "artifact_id": bundle["manifest"]["id"],
               "artifact_manifest_sha256": bundle["manifest_sha256"],
               "registered_artifacts": bundle["registered"], "purpose": bundle["manifest"]["purpose"],
-              "threads_requested": args.threads, "key_policy": KEY_POLICY, "runs": [],
+              "threads_requested": args.threads, "thread_reporting": "Self-reported configured compute threads; OS thread count sampled separately",
+              "primary_metrics": ["accuracy", "roc_auc"], "key_policy": KEY_POLICY, "runs": [],
               "memory_method": "stage process lifetime high-water RSS plus 10ms sampled process-tree RSS",
               "communication_method": "serialized payload bytes; no network transport timing"}
-    report["harness_sha256"] = {p.name: sha256(p) for p in sorted((ROOT / "harness").glob("*.py"))}
+    report["harness_sha256"] = {p.relative_to(ROOT / 'harness').as_posix(): sha256(p) for p in sorted((ROOT / "harness").rglob("*.py"))}
     report["submission_source_sha256"] = {p.relative_to(adapter.parent).as_posix(): sha256(p)
                                           for p in sorted(adapter.parent.rglob("*"))
                                           if p.is_file() and p.suffix in (".py", ".md", ".txt", ".cpp", ".h", ".json")
@@ -72,14 +75,19 @@ def main(argv=None):
         print("[harness] " + name, flush=True)
         measured = run_measured([sys.executable, "-m", "harness.worker", name,
                                  "--adapter", str(adapter), "--io", str(location),
-                                 "--threads", str(args.threads)],
+                                 "--threads", str(args.threads), "--workload", args.workload],
                                 location / (name + ".log"), args.timeout_seconds)
         measured.update(read_json(location / (name + "_measurement.json")))
         return measured
     try:
-        stage("describe", io)
+        report['description_stage'] = stage("describe", io)
         description = read_json(io / "description.json")
         report["description"] = description
+        if args.workload not in description.get('supported_workloads', []):
+            raise ValueError('Submission does not support selected workload')
+        unsupported = description.get('unsupported_operations', [])
+        if unsupported:
+            raise NotImplementedError('Submission is incomplete: ' + str(unsupported))
         report["security"] = validate_description(description, args.debug_plaintext)
         report["keygen"] = stage("keygen", io)
         report["security_check"] = stage("check_context", io)

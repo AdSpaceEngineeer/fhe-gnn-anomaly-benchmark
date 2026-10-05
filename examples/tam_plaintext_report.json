@@ -1,0 +1,198 @@
+{
+  "format_version": 2,
+  "workload": "tam",
+  "status": "passed",
+  "submission": "plaintext_debug",
+  "adapter_sha256": "ba0ac8b32f029c741b1a3ecd7432624da31097988cbfab28746df665e502214a",
+  "artifact_id": "scam-list-tam-synthetic-v1",
+  "artifact_manifest_sha256": "0936868fabfbe3e1fe13b419ed15f01f047bcfa790126cb2af152d1f45f7eeaf",
+  "registered_artifacts": true,
+  "purpose": "frozen_inference_benchmark",
+  "threads_requested": 2,
+  "thread_reporting": "Self-reported configured compute threads; OS thread count sampled separately",
+  "primary_metrics": [
+    "accuracy",
+    "roc_auc"
+  ],
+  "key_policy": "fresh_per_invocation_reused_across_repeats",
+  "runs": [
+    {
+      "index": 0,
+      "stages": {
+        "encrypt": {
+          "wall_seconds": 0.7558282999962103,
+          "sampled_process_tree_peak_rss_bytes": 73261056,
+          "sampled_process_tree_peak_os_threads": 12,
+          "memory_sample_interval_seconds": 0.01,
+          "operation_and_io_seconds": 0.12381940000341274,
+          "process_lifetime_peak_rss_bytes": 70832128,
+          "submission_thread_report": {
+            "compute_threads": 2,
+            "worker_processes": 1,
+            "threading_model": "NumPy/SciPy; BLAS thread limit set by harness environment"
+          }
+        },
+        "evaluate": {
+          "wall_seconds": 1.8350005999964196,
+          "sampled_process_tree_peak_rss_bytes": 323411968,
+          "sampled_process_tree_peak_os_threads": 12,
+          "memory_sample_interval_seconds": 0.01,
+          "operation_and_io_seconds": 1.1844426999887219,
+          "process_lifetime_peak_rss_bytes": 334782464,
+          "submission_thread_report": {
+            "compute_threads": 2,
+            "worker_processes": 1,
+            "threading_model": "NumPy/SciPy; BLAS thread limit set by harness environment"
+          },
+          "harness_file_io_seconds": 0.7667511999898124,
+          "adapter_call_seconds": 0.417685899999924
+        },
+        "decrypt": {
+          "wall_seconds": 0.6326597000006586,
+          "sampled_process_tree_peak_rss_bytes": 66236416,
+          "sampled_process_tree_peak_os_threads": 12,
+          "memory_sample_interval_seconds": 0.01,
+          "operation_and_io_seconds": 0.0546936999890022,
+          "process_lifetime_peak_rss_bytes": 64266240,
+          "submission_thread_report": {
+            "compute_threads": 2,
+            "worker_processes": 1,
+            "threading_model": "NumPy/SciPy; BLAS thread limit set by harness environment"
+          }
+        }
+      },
+      "verification": {
+        "passed": true,
+        "absolute_tolerance": 0.001,
+        "relative_tolerance": 0.001,
+        "max_absolute_error": 0.0,
+        "mean_absolute_error": 0.0,
+        "prediction_agreement": 1.0,
+        "quality": {
+          "threshold": 0.39311713209104254,
+          "accuracy": 0.9632876016260162,
+          "precision": 0.6,
+          "recall": 0.5983379501385041,
+          "f1": 0.5991678224687933,
+          "roc_auc": 0.9272645733625771,
+          "average_precision": 0.6403824197704493
+        },
+        "plaintext_quality": {
+          "threshold": 0.39311713209104254,
+          "accuracy": 0.9632876016260162,
+          "precision": 0.6,
+          "recall": 0.5983379501385041,
+          "f1": 0.5991678224687933,
+          "roc_auc": 0.9272645733625771,
+          "average_precision": 0.6403824197704493
+        }
+      },
+      "server_reported_steps": null,
+      "server_timing_warnings": [],
+      "num_nodes_computed": 39357,
+      "num_test_nodes": 7872,
+      "inference_wall_seconds": 3.2234885999932885,
+      "throughput_nodes_per_second": 21447.949390358124,
+      "end_to_end_nodes_per_second": 12209.442899870017,
+      "storage_bytes": {
+        "public_and_evaluation_keys": 0,
+        "client_private_keys": 0,
+        "encrypted_input": 2518091,
+        "encrypted_output": 822246,
+        "persisted_intermediates": 0
+      },
+      "communication_bytes": {
+        "client_to_server_input": 2518091,
+        "server_to_client_result": 822246,
+        "public_workload_upload_once": 69657758,
+        "key_upload_once": 0,
+        "key_upload_amortized": 0.0
+      },
+      "amortized_keygen_seconds": 0.5685013999900548
+    }
+  ],
+  "memory_method": "stage process lifetime high-water RSS plus 10ms sampled process-tree RSS",
+  "communication_method": "serialized payload bytes; no network transport timing",
+  "harness_sha256": {
+    "__init__.py": "6381adaf52d323106672d071b56f1a91cde3083c2b9df4403fab4d4977ef44cb",
+    "generate_input.py": "dc075a4e96b4383f5a07e06afc3d4f787d5941da3ffe957f1e01addc028fab52",
+    "metrics.py": "09dbddf25cd55fa59af692be4ad358cfdd5502616a6e630adff255af8f229912",
+    "model.py": "448b74ab6865726aa80e013d1e5472268612a1fd605e1a798859a001f4bd52a5",
+    "params.py": "25a57f0e76584950c74b6abbb14c2268e5cb2edb824f8a4f67b2ccb8ad8db48e",
+    "reporting.py": "7e8082f2054b49577fc1d1da27620a3e5c78d321eed77256aad184fe9d8dfcda",
+    "run_submission.py": "5561bf1d34354556aec5a92f573989ce1aa48a6ce235402f6b7ee9e255238248",
+    "security.py": "c22dc60c49dc230f6e38c3679f85296f4a8137c4f202e237330ae8e09fb1c3b4",
+    "threading_report.py": "3df4d3d8ddf77cd2c71f56e41eca048818c3ac24dd2e39437ef5c2fd22d56bf8",
+    "utils.py": "336a210c32fdb3f308870b8b11d02ab3760beecf79d95ad037932f7d445e748e",
+    "verify_result.py": "0c6a5cb670098843adc7be25cce1f8c21599292284696fc0788a27cc1a17feb0",
+    "worker.py": "86a825cecf8c5dba15d6b38e66f68bfcaedc6d99dece91ff26b4bf816812d6ad",
+    "workloads/__init__.py": "3dbfe9b5748682584485b32dfa9b5f62ea24e98bf81dc8101bf1d95fda937313",
+    "workloads/gcn.py": "e2ed05b4f16f20e4fd9478bb243f04adaf4b5cb71d37b19d00788681e7548046",
+    "workloads/tam.py": "ddcc2007c1f2dd02b53023cc9de083a25072d404847812ec547b1cce0b9b757b"
+  },
+  "submission_source_sha256": {
+    "adapter.py": "ba0ac8b32f029c741b1a3ecd7432624da31097988cbfab28746df665e502214a",
+    "README.md": "179a9c53620e8389686e6017a655cc7c39963a32715351aadfe48f4b8a27fed9",
+    "requirements.txt": "26f962e630667f289dcbed924ab5fbf4f2464b9cd9997fe38a21c874a52462d4"
+  },
+  "description_stage": {
+    "wall_seconds": 0.5772480000014184,
+    "sampled_process_tree_peak_rss_bytes": 61562880,
+    "sampled_process_tree_peak_os_threads": 12,
+    "memory_sample_interval_seconds": 0.01,
+    "operation_and_io_seconds": 0.0006303999980445951,
+    "process_lifetime_peak_rss_bytes": 57450496,
+    "submission_thread_report": {
+      "compute_threads": 2,
+      "worker_processes": 1,
+      "threading_model": "NumPy/SciPy; BLAS thread limit set by harness environment"
+    }
+  },
+  "description": {
+    "name": "plaintext_debug",
+    "is_fhe": false,
+    "scheme": "none",
+    "supported_workloads": [
+      "gcn",
+      "tam"
+    ]
+  },
+  "security": {
+    "status": "not_fhe",
+    "eligible": false
+  },
+  "keygen": {
+    "wall_seconds": 0.5685013999900548,
+    "sampled_process_tree_peak_rss_bytes": 61939712,
+    "sampled_process_tree_peak_os_threads": 14,
+    "memory_sample_interval_seconds": 0.01,
+    "operation_and_io_seconds": 0.0033838999952422455,
+    "process_lifetime_peak_rss_bytes": 57565184,
+    "submission_thread_report": {
+      "compute_threads": 2,
+      "worker_processes": 1,
+      "threading_model": "NumPy/SciPy; BLAS thread limit set by harness environment"
+    }
+  },
+  "security_check": {
+    "wall_seconds": 0.676852599994163,
+    "sampled_process_tree_peak_rss_bytes": 61755392,
+    "sampled_process_tree_peak_os_threads": 12,
+    "memory_sample_interval_seconds": 0.01,
+    "operation_and_io_seconds": 0.0020330999977886677,
+    "process_lifetime_peak_rss_bytes": 57491456,
+    "submission_thread_report": {
+      "compute_threads": 2,
+      "worker_processes": 1,
+      "threading_model": "NumPy/SciPy; BLAS thread limit set by harness environment"
+    }
+  },
+  "eligible_for_comparison": false,
+  "timing_summary": {
+    "mean_inference_wall_seconds": 3.2234885999932885,
+    "repeat_count": 1
+  },
+  "network_transfer_seconds": null,
+  "key_rotation_seconds": null,
+  "comparison_scope": "Only the identical registered artifact ID and manifest; internal fixtures are not benchmark results"
+}

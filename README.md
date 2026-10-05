@@ -1,227 +1,166 @@
-# FHE Benchmark — Scam_List_GCN Inference
+# FHE-GNN Anomaly Detection Benchmark
 
 ## Overview
 
-This repository provides an inference benchmark for fully homomorphic encryption
-(FHE) in graph-based scam, crime and fraud prevention. It measures the accuracy
-and computational overhead of anomaly scoring when selected financial-risk
-features remain encrypted during evaluation.
+This benchmark evaluates encrypted graph-neural-network inference for scam,
+crime and fraud prevention. It measures whether an evaluator can compute anomaly
+scores from protected financial-behaviour features while preserving model
+quality, and records the computational and data-transfer costs of doing so.
 
-The workload is **Scam_List_GCN**, a simplified four-layer graph convolutional
-autoencoder inspired by [Ding's DOMINANT implementation](https://github.com/kaize0409/GCN_AnomalyDetection_pytorch).
-Its operations include graph aggregation, matrix multiplication, polynomial
-activations and squared reconstruction error. The benchmark uses one frozen
-model and a synthetic dataset of 100,000 transaction events. Model weights,
-preprocessing, graph structure and reference scores are included in the repository;
-training is outside the benchmark.
+Two frozen workloads are provided:
 
-Submitters should clone this repository and implement their method in
-`submissions/<submission>/`. Each submission contains its implementation,
-dependencies and technical README, including cryptographic parameters, encoding
-and packing strategy. The harness supplies the fixed workload and evaluates the
-submission against the published plaintext reference. The model, dataset,
-threshold and harness remain unchanged.
+| Selection | Workload | Inference | Dataset |
+|---|---|---|---|
+| `gcn` | Scam_List_GCN | Four-layer ReLU feature-reconstruction GCN | 100,000 synthetic transaction events; 8 features |
+| `tam` | Scam_List_TAM | Two-layer PReLU GCN with normalized neighbourhood affinity | 39,357 synthetic accounts; 10 features |
+
+TAM is the **higher computational challenge**, adding norm-dependent
+normalization and encrypted affinity products. It is not presented as better
+fraud detection: the workloads have separate datasets, weights and baselines.
+Both are synthetic research workloads, not evidence of real-world detection
+performance.
+
+Submissions implement encryption, encrypted evaluation and decryption using
+their chosen scheme and backend. Three designated feature columns are protected
+in each workload; graph structure, remaining features and model weights are
+public. Standard ReLU/PReLU and normalization remain in the reference models.
+Their encrypted implementation is the submitter's responsibility.
 
 ## Execution model
 
-All stages run on one machine in separate processes, with files representing
-client/server communication.
+The client generates one fresh key set, encrypts the sensitive inputs, and
+decrypts the returned anomaly scores. The evaluator receives public/evaluation
+keys, ciphertexts and the public workload inputs. It must not receive secret
+keys or sensitive plaintext features.
 
-| Component | Responsibility |
-|---|---|
-| Client | Generate keys; encode and encrypt sensitive inputs; decrypt the resulting anomaly scores |
-| Evaluator | Compute encrypted scores using ciphertext inputs, public features, normalized graph, frozen weights and public/evaluation keys |
-| Harness | Validate workload integrity and security parameters, orchestrate stages, verify scores and record measurements |
+The runner executes each stage in a separate process, verifies outputs against
+the frozen reference, and applies the published threshold and test split.
+Repeated runs reuse the key set. This single-machine interface separates client
+and evaluator files logically; it is not a sandbox for untrusted code.
 
-The three encrypted model features are `transfer_amount_z`,
-`source_daily_total_amount_z` and `prior_report_count_z`: normalized transaction
-amount, running daily transferred total and prior report count. Payment-channel
-indicators, normalized daily transaction count, graph topology and model weights
-are public under the benchmark's v1 confidentiality boundary.
-
-The evaluator interface excludes secret keys, plaintext sensitive features,
-labels and reference scores. This separation is a logical research interface,
-not an operating-system sandbox. One fresh key set is generated per invocation
-and reused across its repeat runs.
+Training and data preparation are outside benchmark execution. Datasets,
+weights, preprocessing and thresholds are already included; no model preparation
+or retraining is required from submitters.
 
 ## Running the benchmark
 
-### Dependencies
+Use Python 3.10–3.12. Install the common dependencies and create a submission:
 
-- Python 3.10–3.12.
-- Core packages in `requirements.txt`.
-- Any additional packages required by your submission, listed in
-  `submissions/<submission>/requirements.txt`.
-
-The harness is scheme-independent. Installing it does not require CKKS, TenSEAL
-or any other particular FHE backend.
-
-### Install the benchmark
-
-Clone the repository and install the core dependencies:
-
-```console
+```bash
 git clone https://github.com/AdSpaceEngineeer/fhe-gnn-anomaly-benchmark.git
 cd fhe-gnn-anomaly-benchmark
-
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
+cp -r submissions/template submissions/my_method
 ```
 
-### Add your submission
+Implement `submissions/my_method/adapter.py`, document the method in its README,
+and list its dependencies in its own `requirements.txt`. The common requirements
+do not select an FHE library. Install the submission's dependencies, then run:
 
-Place your implementation in `submissions/my_method/`, including `adapter.py`,
-any supporting files, `requirements.txt` and a technical `README.md`.
-You can start from the scheme-independent `submissions/template/` directory;
-its adapter methods must be implemented before running the benchmark.
-
-Your submission defines its scheme, cryptographic parameters, encoding and
-packing. Implement the interface described under [Stage descriptions](#stage-descriptions)
-without modifying the harness or frozen workload. Install its dependencies:
-
-```console
+```bash
 python -m pip install -r submissions/my_method/requirements.txt
+python harness/run_submission.py --workload gcn --submission my_method --threads 2 --out measurements/my-gcn-run
 ```
 
-### Execution
+Select `--workload tam` when the submission supports TAM. The workload selection
+is mandatory. Use a new output directory for every invocation; `--num-runs`
+controls repetitions. `--threads` requests parallelism; submitters must also
+report the compute threads actually configured.
 
-Run your completed submission with one command:
+To check installation without performing any FHE operations:
 
-```console
-python harness/run_submission.py --submission my_method --threads 2
+```bash
+python harness/run_submission.py --workload gcn --submission plaintext_debug --debug-plaintext --out measurements/plaintext-check
 ```
 
-The harness selects `scam-list-gcn-100k-v1` and supplies its frozen model and data
-automatically. No training, model download or manual weight preparation is
-required. Use `--num-runs` for repeated measurements and `--help` for all options.
+The plaintext check is not an FHE submission. See the
+[submission interface](docs/submission-contract.md) for the complete contract.
 
-### Optional: try the CKKS example
-
-Instead of implementing an adapter, you can copy the supplied CKKS example into
-a new submission directory and install its dependencies:
-
-```console
-python -c "import shutil; shutil.copytree('submissions/toy_ckks', 'submissions/my_ckks_example')"
-python -m pip install -r submissions/my_ckks_example/requirements.txt
-python harness/run_submission.py --submission my_ckks_example --threads 2
-```
-
-Copy the entire directory, including its helper files. This optional example uses
-TenSEAL 0.3.16 and its Microsoft SEAL bindings; these are dependencies of the
-example, not requirements of the benchmark.
-
-The CKKS example is unoptimized and targets the full workload. Its interface and
-packing algebra have been tested, but a completed encrypted run of this revision
-has not been validated. Resource requirements and implementation details are
-documented in the [submission README](submissions/toy_ckks/README.md).
+An optional [incomplete CKKS example for GCN](submissions/toy_ckks/README.md)
+demonstrates key setup, encryption and decryption. Its encrypted-ReLU placeholder
+must be implemented by the submitter. The unchanged example is rejected before
+expensive benchmark execution; no activation approximation is supplied.
 
 ## Metrics and security
 
-| Category | Measurements |
+The runner writes `report.json` and a compact `comparison.md` table.
+
+| Category | Reported measurements |
 |---|---|
-| Model performance | Anomaly Recall and F1 (primary); Accuracy, Precision, ROC-AUC and average precision |
-| Numerical agreement | Score error and prediction agreement against the frozen plaintext reference |
-| Latency and throughput | Stage wall times, total inference time and event throughput |
-| Memory consumption | Peak process memory and sampled process-tree memory |
-| Storage requirements | Serialized keys, input/output ciphertexts and retained intermediate files |
-| Communication complexity | Serialized client/server payload sizes, including one-time key and public-workload uploads |
+| Model quality | **Accuracy and ROC-AUC**; Recall, F1, Precision and Average Precision |
+| Fidelity | Score errors, prediction agreement and numerical verification |
+| Latency and throughput | Key generation; encryption, evaluation and decryption wall times; total inference; nodes/second |
+| Memory | Per-stage process high-water RAM and sampled process-tree peak RAM |
+| Storage | Serialized keys, input/output ciphertexts and persisted intermediates |
+| Communication | Serialized client/server payload bytes; one-time and amortized key uploads |
+| Parallelism | Requested threads, submitter-reported compute threads/processes and sampled OS threads |
 
-Each run produces `report.json` and a compact `comparison.md` in
-`measurements/<run-id>/`. Stage wall times include file I/O and process overhead.
-Network-transfer and key-rotation durations are not measured.
+Optional server timings distinguish encrypted arithmetic and file handling;
+they supplement, not replace, measured wall time. Real network transfer duration
+and key rotation are not measured. See [measurement definitions](docs/measurements.md).
 
-Following the BERT harness convention, submissions may additionally write
-`intermediate_dir/server_reported_steps.json`, a dictionary of named durations
-in seconds. Arithmetic and I/O timings are recorded as optional server-reported
-detail, separate from the harness's independent measurements.
+FHE submissions require **at least 128-bit classical security**. Declare the
+parameters and supporting evidence in the submission. SEAL-based contexts have
+built-in parameter/context checks; other schemes require evidence review.
+An automated check is not a cryptographic security certification. Hardware
+details are optional (`--include-hardware`); thread reporting is required.
 
-**FHE submissions must provide evidence of at least 128-bit classical security.**
-The harness checks supported SEAL contexts against declared parameters. Other
-schemes require security-evidence review before their results are eligible for
-comparison; numerical agreement alone does not establish security.
-
-Share the JSON report and comparison table, not the run's `io/` directory, which
-contains client secrets and plaintext inputs. Hardware reporting is opt-in.
-See the [measurement definitions](docs/measurements.md) and
-[submission contract](docs/submission-contract.md) for reporting and admission rules.
+Only the same registered workload/artifact version should be compared.
+Submission quality is reported even when numerical verification fails.
+Publish only `report.json` and `comparison.md`: the run directory also contains
+client secret keys and sensitive plaintext inputs.
 
 ## Example output
 
-The following results come from a verified **plaintext-only** run of the complete
-100,000-event workload. Detection metrics use its fixed 20,000-event test split.
+**Verified plaintext reference results — not FHE results.** The values below
+use the frozen float64 reference inference, fixed test splits and thresholds.
 
-| Metric | Frozen reference | Plaintext verification run |
-|---|---:|---:|
-| Anomaly Recall | 0.897783 | 0.897783 |
-| Anomaly F1 | 0.915254 | 0.915254 |
-| Accuracy | 0.993250 | 0.993250 |
-| Maximum absolute score error | — | 0 |
-| Prediction agreement | — | 1.000000 |
+| Workload | Test nodes | Accuracy | ROC-AUC | Recall | F1 |
+|---|---:|---:|---:|---:|---:|
+| Scam_List_GCN | 20,000 | 0.993400 | 0.998725 | 0.902709 | 0.917397 |
+| Scam_List_TAM | 7,872 | 0.963288 | 0.927265 | 0.598338 | 0.599168 |
 
-To run this verification:
-
-```console
-python harness/run_submission.py --submission plaintext_debug --debug-plaintext --threads 2
-```
-
-The corresponding [JSON report](examples/frozen_plaintext_report.json) and
-[comparison table](examples/frozen_plaintext_comparison.md) demonstrate the output
-format. These are synthetic-data plaintext results, not FHE performance measurements
-or evidence of real-world fraud-detection accuracy.
+Full plaintext integration reports and comparison tables are in
+[examples/](examples/README.md). Their timings describe the verification runs,
+not encrypted performance or portable performance guarantees.
 
 ## Directory structure
 
 ```text
-├── README.md
-├── requirements.txt          # Scheme-independent harness dependencies
-├── harness/                  # Fixed workload execution, verification and metrics
-│   ├── run_submission.py     # Main entry point
-│   ├── model.py              # Plaintext inference reference
-│   ├── verify_result.py      # Score and prediction verification
-│   └── reporting.py          # Optional timings and comparison tables
-├── artifacts/                # Frozen dataset, weights, scores and checksum registry
-├── submissions/              # User implementations and their dependencies
-│   ├── toy_ckks/             # Copyable CKKS implementation
-│   ├── template/             # Scheme-independent adapter template
-│   └── plaintext_debug/      # Plaintext pipeline verification
-├── measurements/             # Generated run reports and client/server files
-├── examples/                 # Example reports with their validation status
-├── docs/                     # Dataset, architecture and benchmark specifications
-├── scripts/                  # Maintainer training and artifact export
-└── tests/                    # Integrity, interface and arithmetic tests
+artifacts/          Frozen datasets, weights, references and checksum registry
+docs/               Dataset, model, operation and submission specifications
+examples/           Verified plaintext reports and comparison tables
+harness/            Shared runner, stage execution, security and measurements
+  workloads/        Workload-specific reference inference
+scripts/            Maintainer-only training and export utilities
+submissions/        Submission template and implementations
+tests/              Interface, model, security and reporting tests
+requirements.txt    Scheme-independent inference dependencies
 ```
 
 ## Stage descriptions
 
-The harness invokes the following methods on a submission's `Adapter` class:
-
-| Interface method | Role | Inputs and outputs |
-|---|---|---|
-| `describe()` | Declare the implementation | Return parameters, security evidence, encoding, packing and activation details |
-| `keygen(threads)` | Client key generation | Return separate client-private and public/evaluation key bundles |
-| `encrypt(sensitive, private_files, threads)` | Client encoding and encryption | Transform the three sensitive feature columns into serialized ciphertext inputs |
-| `evaluate(encrypted, public, public_files, threads, intermediate_dir)` | Server inference | Use ciphertexts and the public workload to return encrypted anomaly scores |
-| `decrypt(encrypted_scores, private_files, threads)` | Client decryption and decoding | Return one numeric anomaly score per event |
-
-The harness checks the cryptographic context after key generation and verifies
-scores after decryption. Scheme-specific encoding and packing remain inside the
-submission and its measured stages. The [submission contract](docs/submission-contract.md)
-defines payload formats and the exact public inputs.
+| Stage / method | Responsibility |
+|---|---|
+| `configure(workload, threads)` | Configure each stage's backend and workload |
+| `describe()` | Declare scheme, parameters, encoding, packing and security evidence |
+| `thread_report(stage, requested_threads)` | Report configured compute parallelism |
+| `keygen(threads)` | Generate and separate private and evaluator-public keys |
+| Context check | Harness checks applicable serialized security parameters |
+| `encrypt(...)` | Encode and encrypt the designated feature columns |
+| `evaluate(...)` | Compute encrypted anomaly scores using the frozen workload |
+| `decrypt(...)` | Return decoded scores in the published node order |
+| Verification and reporting | Harness computes fidelity, quality and overhead measurements |
 
 ## Technical references
 
-- [Dataset specification](docs/dataset.md): transaction-log head, field definitions,
-  feature encoding, graph construction and sensitive columns.
-- [GCN architecture and plaintext baseline](docs/scam-list-gcn.md): layers, scoring
-  rule, training provenance and detection results.
-- [Benchmark methodology](docs/benchmark-spec.md): industry motivation, model
-  selection, fixed-workload policy and ciphertext operations.
-- [Frozen workload artifacts](artifacts/scam-list-gcn-100k-v1/README.md): published
-  model, dataset and integrity checks.
-- [DOMINANT implementation](https://github.com/kaize0409/GCN_AnomalyDetection_pytorch):
-  starting architectural reference for the simplified GCN.
-- [FHE Benchmarking Suite](https://fhe-benchmarking.github.io/): measurement categories
-  and minimum-security requirement.
-- [BERT inference benchmark](https://github.com/fhe-benchmarking/BERT):
-  submission workflow and optional server-timing convention.
+- [Benchmark specification](docs/benchmark-spec.md) and [operation comparison](docs/operations.md).
+- GCN: [dataset](docs/dataset.md), [model](docs/scam-list-gcn.md), [frozen artifacts](artifacts/README.md).
+- TAM: [dataset](docs/dataset-tam.md), [model](docs/scam-list-tam.md).
+- [Ma et al., A Comprehensive Survey on Graph Anomaly Detection with Deep Learning](https://arxiv.org/abs/2106.07178), journal publication 2023.
+- [DOMINANT implementation](https://github.com/kaize0409/GCN_AnomalyDetection_pytorch), the starting architectural reference for the simplified GCN.
+- [TAM paper](https://arxiv.org/abs/2306.00006) and [implementation](https://github.com/mala-lab/TAM-master), the affinity-workload references.
+- [T-Finance dataset paper](https://proceedings.mlr.press/v162/tang22b/tang22b.pdf), inspiration for the synthetic account schema, not the data source.
+- [FHE Benchmarking Suite](https://fhe-benchmarking.github.io/) and [BERT benchmark](https://github.com/fhe-benchmarking/BERT), references for measurement categories and staged execution.

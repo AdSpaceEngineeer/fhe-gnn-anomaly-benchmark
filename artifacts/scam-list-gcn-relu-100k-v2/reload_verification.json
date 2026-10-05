@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "max_absolute_score_error": 8.111572249447363e-07,
+  "score_rtol": 1e-06,
+  "score_atol": 1e-06
+}

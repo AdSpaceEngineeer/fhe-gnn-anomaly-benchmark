@@ -1,60 +1,27 @@
 # Frozen workload artifacts
 
-There is one published benchmark workload: `scam-list-gcn-100k-v1`.
-The former miniature GCN lives only in `tests/fixtures/arithmetic/` as an internal
-regression fixture and is no longer registered as a benchmark workload.
+| Workload | Active artifact ID | Activation | Threshold |
+|---|---|---|---:|
+| GCN | `scam-list-gcn-relu-100k-v2` | ReLU | 4.11271162092986 |
+| TAM | `scam-list-tam-synthetic-v1` | PReLU | 0.39311713209104254 |
 
-[`scam-list-gcn-100k-v1/`](scam-list-gcn-100k-v1/README.md) contains the newly
-frozen September 2026 trained baseline: 100,000 events, widths 8/64/32/64/8, exact
-data, weights, checkpoint and verified reference scores. These files are included
-when cloning. The older reported run's checkpoint was unavailable; this is the
-approved retraining run, not recovery of that lost checkpoint. Do not substitute
-toy scores for trained-baseline metrics.
+Each directory contains encoded data, frozen JSON weights, reference scores,
+raw synthetic logs, the original PyTorch checkpoint, training metrics and
+reload verification. GCN and TAM data, splits, thresholds and weights are
+independent. `registry.json` pins the manifest hash for each active artifact.
+The retired polynomial GCN artifact is available only through Git history.
 
-## Use the trained bundle
+The runner reads JSON/gzip rather than loading PyTorch checkpoints. The manifest
+hashes logical uncompressed contents for `.gz` files. Altering covered files
+invalidates verification. Checkpoints are included for research provenance, not
+loaded during benchmark inference. Do not unpickle untrusted checkpoints.
 
-```bash
-python harness/run_submission.py --submission plaintext_debug --debug-plaintext --artifacts artifacts/scam-list-gcn-100k-v1 --threads 2
-```
+`reference.json.gz` contains scores recalculated using independent float64
+inference from the frozen float32 weights, without retraining or threshold
+tuning. Small ROC-AUC/AP differences from training logs reflect numerical ties.
+`baseline_metrics.json` preserves the original training-run measurements.
 
-This verifies the full frozen graph in plaintext. It is not an FHE measurement.
-An FHE implementation that supports this workload uses the same `--artifacts`
-option with its own submission name. It is also the runner's default: no artifact
-selection is needed in the CKKS copy/install/run workflow. The revised CKKS code
-targets this workload; a completed full encrypted run is not claimed.
-
-## Maintainer import, outside inference
-
-Maintainers can import another trusted run without retraining:
-
-```bash
-python -m pip install -r requirements-training.txt
-python scripts/export_artifacts.py --source /path/to/trusted/run --out artifacts/new-version --id new-version
-```
-
-The exporter checks the original model checksum, loads weights safely, preserves
-the graph/features/splits/scaler/threshold, and calculates an independent float64
-reference. The original float32 training report is retained. Small float-rounding
-differences are possible; neither result should be silently substituted for the
-other. Register the reviewed manifest SHA256 in `registry.json` when publishing.
-The harness consumes JSON and does not require PyTorch for inference. The exporter
-writes uncompressed files, which the loader also supports.
-
-Frozen files:
-
-- `manifest.json`: artifact ID, purpose, activation, tolerances and SHA256 hashes.
-- `data.json` or `data.json.gz`: features, graph COO arrays, feature schema/preprocessing and splits.
-- `weights.json`: all four layers' frozen matrices and biases.
-- `reference.json` or `reference.json.gz`: plaintext scores, fixed threshold and quality metrics.
-- `transactions.csv.gz`: original synthetic log for the trained bundle.
-- `scam_list_gcn.pt`: original trained checkpoint, checked against the manifest's model hash; not loaded by PyTorch during benchmark inference.
-
-Large files use lossless gzip compression. The loader reads them directly without
-writing decompressed copies. Manifest hashes describe their **uncompressed bytes**,
-so the supplied trained manifest retains its identity. Plain and compressed copies
-of the same logical file must not coexist. Training metadata and the exact package
-snapshot accompany the trained bundle; they are provenance, not extra model inputs
-or FHE measurements.
-
-Files use LF line endings for stable hashes. Changes create a new workload
-version. Training/generation is a maintainer operation, outside timed inference.
+Synthetic records are published to make the benchmark reproducible. In each
+submission run the adapter's evaluator interface receives only the designated
+public inputs and encrypted sensitive columns. Public topology and correlated
+features can still reveal information; this is not full graph privacy.

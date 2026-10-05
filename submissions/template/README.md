@@ -1,38 +1,13 @@
-# Submission: replace with your method name
+# Submission template
 
-## Technical description
+Replace this document with your method's technical description:
 
-Describe your scheme/algorithm and how it evaluates the four GCN layers and
-mean squared reconstruction score. List numerical approximations and ranges.
+- Supported workloads and encrypted inference implementation.
+- Cryptographic scheme, parameter sets and evidence for at least 128-bit security.
+- Encoding, packing and nonlinear operation handling.
+- Dependencies and installation instructions.
+- Thread/process configuration and any deviations from the requested thread count.
 
-## Security parameters
-
-Provide at least 128-bit classical security. List every key type, ring dimensions,
-moduli, secret/error distributions, scale or plaintext modulus, bootstrapping or
-scheme-switching parameters and estimator/standard evidence. Include estimator
-version, command, assumptions and output where relevant. Do not publish keys.
-
-## Encoding and packing
-
-Explain the encoding of the three normalized sensitive fields and the tensor
-layout, slot utilization, rotations, padding and precision.
-
-## Installation
-
-List Python dependencies in `requirements.txt`; document native builds if used.
-
-## Execution
-
-```bash
-python -m pip install -r requirements.txt
-python -m pip install -r submissions/YOUR_NAME/requirements.txt
-python harness/run_submission.py --submission YOUR_NAME --threads 2
-```
-
-## Limitations and results
-
-List supported artifact IDs, input ranges, resource needs and approximation
-failures. Attach the generated `report.json`; do not attach `io/`.
-Also share `comparison.md` for the compact quality/overhead table. Optional
-server timings belong in `intermediate_dir/server_reported_steps.json` as a flat
-dictionary of names to finite nonnegative seconds; explain the measurement scope.
+Implement every required method in `adapter.py`. `requirements.txt` should
+contain only this submission's additional dependencies. See the
+[submission contract](../../docs/submission-contract.md).

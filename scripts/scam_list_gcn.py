@@ -16,11 +16,12 @@ import json
 import math
 import os
 import random
+import shutil
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple
 
-# Apply shared-server defaults before importing numerical libraries.
+# Set numerical-library defaults before import; --threads sets PyTorch parallelism.
 for _name in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
     os.environ.setdefault(_name, "2")
 
@@ -39,6 +40,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from torch import nn
+from benchmark_training_common import dump, environment, package
 
 
 PAYMENT_CHANNELS = ("wallet", "bank_transfer", "card", "instant_pay")
@@ -80,7 +82,7 @@ class RunConfig(object):
     epochs = 80
     learning_rate = 0.01
     weight_decay = 5e-4
-    activation = "poly2"
+    activation = "relu"
     train_normal_only = True
     sensitive_loss_weight = 2.0
 
@@ -374,7 +376,7 @@ class Scam_List_GCN(nn.Module):
         input_dim: int,
         hidden_dim: int = 64,
         latent_dim: int = 32,
-        activation: str = "poly2",
+        activation: str = "relu",
     ) -> None:
         super().__init__()
         self.activation_name = activation
@@ -386,8 +388,6 @@ class Scam_List_GCN(nn.Module):
     def activate(self, x: torch.Tensor) -> torch.Tensor:
         if self.activation_name == "relu":
             return torch.relu(x)
-        if self.activation_name == "poly2":
-            return x + 0.125 * (x * x)
         raise ValueError(f"Unsupported activation: {self.activation_name}")
 
     def forward(self, x: torch.Tensor, adj_norm: torch.Tensor) -> torch.Tensor:
@@ -454,7 +454,7 @@ def train_model(
     schema: dict,
     config: RunConfig,
 ) -> Tuple[Scam_List_GCN, np.ndarray, dict]:
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     x = torch.tensor(features, dtype=torch.float32, device=device)
     y = labels.astype(np.int64)
     adj_torch = scipy_to_torch_sparse(adj_norm, device)
@@ -577,11 +577,44 @@ def write_outputs(
     }
     report["config"] = config_to_dict(config)
     (outdir / "baseline_metrics.json").write_text(json.dumps(report, indent=2))
+    dump(outdir / 'weights.json', {k: v.detach().cpu().numpy().tolist()
+                                  for k, v in model.state_dict().items()})
+    dump(outdir / 'environment.json', environment())
+    checkpoint = torch.load(model_path, map_location='cpu', weights_only=True)
+    restored = Scam_List_GCN(features.shape[1], config.hidden_dim, config.latent_dim, 'relu')
+    restored.load_state_dict(checkpoint['model_state_dict'], strict=True)
+    restored.eval()
+    x = torch.from_numpy(features)
+    with torch.no_grad():
+        reloaded = reconstruction_scores(x, restored(x, scipy_to_torch_sparse(adj_norm, torch.device('cpu'))),
+                                         [feature_names.index(name) for name in SENSITIVE_FEATURES])
+    np.testing.assert_allclose(reloaded, scores, atol=1e-6, rtol=1e-6)
+    h = features.astype(np.float64)
+    weights = json.loads((outdir / 'weights.json').read_text())
+    for index, name in enumerate(('encoder_1', 'encoder_2', 'decoder_1', 'decoder_2')):
+        h = adj_norm @ (h @ np.asarray(weights[name + '.weight'])) + np.asarray(weights[name + '.bias'])
+        if index < 3:
+            h = np.maximum(h, 0)
+    selected = [feature_names.index(name) for name in SENSITIVE_FEATURES]
+    independent = np.mean((h[:, selected] - features[:, selected]) ** 2, axis=1)
+    np.testing.assert_allclose(independent, scores, atol=1e-4, rtol=1e-5)
+    dump(outdir / 'reload_verification.json', dict(passed=True,
+         reload_max_absolute_error=float(np.max(np.abs(reloaded - scores))),
+         independent_numpy_max_absolute_error=float(np.max(np.abs(independent - scores)))))
+    for name in ('scam_list_gcn.py', 'benchmark_training_common.py'):
+        shutil.copyfile(Path(__file__).parent / name, outdir / name)
+    names = ['transactions.csv', 'features.npy', 'labels.npy', 'network_adjacency.npz',
+             'network_adjacency_normalized.npz', 'splits.json', 'anomaly_scores.csv',
+             'feature_schema.json', 'scam_list_gcn.pt', 'baseline_metrics.json', 'weights.json',
+             'environment.json', 'reload_verification.json', 'scam_list_gcn.py', 'benchmark_training_common.py']
+    package(outdir, names, dict(kind='training-upload-package-not-yet-harness-bundle',
+                               workload='Scam_List_GCN', activation='relu', num_events=len(df)))
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train Scam_List_GCN baseline.")
-    parser.add_argument("--outdir", default="runs/scam_list_gcn")
+    parser.add_argument("--outdir", default="runs/scam-list-gcn-relu")
+    parser.add_argument("--threads", type=int, default=2)
     parser.add_argument("--num-events", type=int, default=RunConfig.num_events)
     parser.add_argument("--num-accounts", type=int, default=RunConfig.num_accounts)
     parser.add_argument("--scam-rate", type=float, default=RunConfig.scam_rate)
@@ -593,7 +626,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--epochs", type=int, default=RunConfig.epochs)
     parser.add_argument("--learning-rate", type=float, default=RunConfig.learning_rate)
     parser.add_argument("--weight-decay", type=float, default=RunConfig.weight_decay)
-    parser.add_argument("--activation", choices=("poly2", "relu"), default=RunConfig.activation)
+    parser.add_argument("--activation", choices=("relu",), default=RunConfig.activation)
     parser.add_argument(
         "--train-all-nodes",
         action="store_true",
@@ -609,7 +642,10 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    torch.set_num_threads(int(os.environ["OMP_NUM_THREADS"]))
+    if args.threads < 1:
+        raise ValueError("threads must be positive")
+    torch.set_num_threads(args.threads)
+    torch.set_num_interop_threads(1)
     config = RunConfig(
         num_events=args.num_events,
         num_accounts=args.num_accounts,
@@ -627,7 +663,9 @@ def main() -> None:
         sensitive_loss_weight=args.sensitive_loss_weight,
     )
     outdir = Path(args.outdir)
-    outdir.mkdir(parents=True, exist_ok=True)
+    if any(p.exists() for p in (outdir, Path(str(outdir) + '.tar.gz'), Path(str(outdir) + '.tar.gz.sha256'))):
+        raise ValueError('Output exists; choose a new --outdir')
+    outdir.mkdir(parents=True, exist_ok=False)
 
     print("Generating synthetic transaction log...")
     df = generate_transaction_log(config)

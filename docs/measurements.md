@@ -1,75 +1,61 @@
-# Measurement definitions
+# Measurements
 
-| Quantity | Harness measurement |
+The runner writes `report.json` and `comparison.md` for each invocation. Compare
+submissions only on the same artifact ID and manifest checksum. Record thread
+configuration alongside results. Hardware reporting is optional via
+`--include-hardware`; meaningful runtime comparisons require comparable hardware.
+
+| Measurement | Definition |
 |---|---|
-| Stage latency | `perf_counter` wall time of a fresh worker, including imports, serialization and local file I/O |
-| Operation + I/O latency | Worker timer after adapter import; context loading, encoding/decoding and file writes included |
-| Inference latency | Sum of encryption, evaluator and decryption worker times; excludes key generation and validation |
-| Throughput | All graph nodes scored / evaluator wall time; end-to-end throughput also reported |
-| Peak memory | OS process-lifetime high-water RSS and 10ms samples of aggregate worker/descendant RSS, bytes |
-| Key storage | Exact serialized public/evaluation bundle and separate client-private bundle sizes |
-| Ciphertext storage | Exact input/output serialized bytes |
-| Intermediate storage | Files retained in `intermediate_dir`; in-memory temporaries are covered by RAM measurements |
-| Communication | Client ciphertext upload, result download, one-time key/public-workload bytes and amortized key bytes |
-| Quality | Recall/F1 (primary), Accuracy, Precision, ROC-AUC/AP; fixed test split and validation threshold |
-| Numerical fidelity | Absolute/relative tolerance check over all scores, mean/max error, prediction agreement |
+| Accuracy and ROC-AUC | Primary test-set quality metrics using decrypted scores |
+| Recall, F1, Precision, Average Precision | Additional test-set quality metrics |
+| Score error | Maximum and mean absolute difference from frozen plaintext scores |
+| Prediction agreement | Fraction of all nodes with matching threshold decisions |
+| Stage latency | Wall time of each keygen/encrypt/evaluate/decrypt process, including startup and file I/O |
+| Inference latency | Encryption + evaluation + decryption wall times; key generation excluded |
+| Throughput | Nodes computed divided by evaluation time; end-to-end throughput also reported |
+| Peak RAM | Maximum observed stage/process memory, including sampled child processes |
+| Storage | Serialized keys, input/output ciphertext payloads and persisted intermediates |
+| Communication | Serialized input/result bytes; public workload and key uploads counted once |
+| Threads | Requested limit, required submitter-reported configuration and sampled OS thread count |
 
-No actual network is used; network latency and key upload duration are `null`,
-not fabricated from local reads. Rotation timing is `null` under the fixed key
-policy. Public/evaluation key sizes are combined when the backend serializes them
-as one context. OS high-water values cover the whole stage process; sampled
-process-tree values can miss very short peaks and double-count shared pages.
-GPU/device memory is not included in RSS and needs separate adapter reporting.
-Thread settings are requests; a custom/native backend must honor them. Coordinate
-large jobs on shared systems and follow local allocation rules.
+GCN throughput is events/second; TAM throughput is accounts/second. Each
+inference computes the complete fixed graph. Repetitions run that same workload
+with the invocation's key set; they are not independently sized subgraphs.
 
-The first run is cold and repeats include context loads; no warmup is silently
-discarded. This is a correctness-stage, file-based baseline, not an optimized
-transport or kernel-only performance measurement. The default is the fixed trained
-100,000-event workload; internal fixtures do not establish its FHE performance.
-A single graph run scores a batch of event nodes;
-per-node latency is not separately measured.
+Memory combines the stage process lifetime high-water RSS with 10 ms samples
+of aggregate process-tree RSS. Sampling can miss short peaks; summing RSS can
+count shared pages more than once. Key, ciphertext and persisted intermediate
+sizes exclude transient in-memory objects. OS thread sampling is not a count of
+active CPU cores or proof of a submission's thread declaration.
 
-Exit codes: `0` numerical verification passed; `2` valid scores exceeded the
-tolerance; `1` installation, security, artifact, timeout or execution error.
-Security status and artifact registration are separate from numerical PASS.
-`eligible_for_comparison` is scoped to identical artifact manifests and requires
-all three. The plaintext debug adapter is never an FHE comparison.
+Communication measures bytes, not actual network transport. Key upload time,
+rotation time and network latency remain null, not zero. Key generation cost is
+reported once and amortized across repetitions. No plaintext runtime baseline is
+implied by the frozen plaintext quality metrics.
 
-`report.json` and `comparison.md` are the shareable results. `io/` contains client secret keys and test
-plaintext; never submit it. Default output uses a fresh directory, and an existing
-`--out` is rejected. Reports do not collect hardware identifiers by default;
-`--include-hardware` adds an OS/CPU summary. Without comparable hardware/runtime
-conditions, do not interpret timing differences as scheme superiority.
+## Optional server timings
 
-## Optional server-reported timings
+Following the BERT harness convention, submissions may supply named timings in
+`server_reported_steps.json`. Report arithmetic separately from context loading,
+serialization and file I/O where possible. The runner also measures its own
+evaluate-stage file I/O and the adapter call; the latter can include work other
+than arithmetic. Invalid optional timing files produce a warning, not a fabricated
+measurement. Main stage wall times remain authoritative elapsed measurements.
 
-Following [BERT's server reporting convention](https://github.com/fhe-benchmarking/BERT/blob/170bfe567545d74d0fad785a052518351d37bc93/submissions/server_encrypted_compute.py),
-an adapter may write `intermediate_dir/server_reported_steps.json`, a flat JSON
-object mapping step names to finite nonnegative seconds, for example:
+## Verification
 
-```json
-{"Encrypted computation": 12.3, "I/O": 1.4, "Total": 13.7}
-```
+A score passes numerical verification when
+`abs(submitted - reference) <= atol + rtol * abs(reference)` for every node.
+The registered manifests use `atol=0.001`, `rtol=0.001`. Quality metrics are
+reported even when this numerical gate fails. The threshold is never refitted
+on a submission. ROC-AUC uses continuous scores; Accuracy uses the published
+validation-selected threshold.
 
-The harness stores these separately in each run's `server_reported_steps`; it
-never substitutes or subtracts them from independently measured stage times.
-Names can describe other useful components. Document whether they overlap and
-what `Total` includes. Missing files are optional; malformed, oversized (>64 KiB),
-duplicate-key or nonnumeric/negative/nonfinite reports are ignored with warnings.
-This does not change numerical verification or the main measurements.
+`eligible_for_comparison` requires a registered unchanged bundle, successful
+numerical verification and accepted security evidence. It is an automated
+eligibility flag, not a cryptographic audit or certification. Plaintext debug runs
+are never eligible FHE results.
 
-The evaluator worker also records `harness_file_io_seconds` for reading its inputs
-and writing returned outputs, and `adapter_call_seconds` for the adapter call.
-Adapter-reported I/O covers only the adapter's declared scope; these fields are
-not assumed to equal the worker wall time. The timing file is excluded from
-persisted intermediate-value bytes, because it is reporting metadata.
-
-## Compact companion table
-
-`comparison.md` compares fixed-reference Recall/F1/Accuracy with the submission,
-then displays main overhead and optional timing detail. It averages completed
-repeats, labels worst-case score error/maximum RAM, and counts each one-time
-key/public-workload upload once when amortizing communication. Missing timings
-appear as a dash, not zero. No matched plaintext timing is invented. Debug runs
-are labelled non-FHE; failed runs without completed results get no fabricated table.
+The metric categories follow the [FHE Benchmarking Suite](https://fhe-benchmarking.github.io/).
+Optional server timings follow its [BERT harness](https://github.com/fhe-benchmarking/BERT).

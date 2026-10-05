@@ -1,20 +1,14 @@
-# Schemes, methods and harnesses
+# Schemes and execution
 
-The executable integration contract is now in
-[submission-contract.md](submission-contract.md). Run implementations through
-`harness/run_submission.py`; do not use the earlier local correctness-runner draft.
+The harness is implementation-agnostic. A submission provides cryptographic
+parameters, encoding, packing, encrypted evaluation and security evidence through
+the [adapter interface](submission-contract.md). At least 128-bit classical
+security is required. Backend dependencies remain submission-specific.
 
-- `submissions/template/`: scheme-independent integration entry point.
-- `submissions/toy_ckks/`: real CKKS arithmetic demonstration with parameter checks.
-- `submissions/plaintext_debug/`: non-encrypted pipeline test.
-- `requirements.txt`: core dependencies, independent of the submission backend.
+The same stage runner, security checks, process measurements, quality metrics
+and report generation serve both workloads. Reference inference, graphs, weights,
+sensitive feature indices and decision thresholds remain workload-specific.
 
-Schemes may use polynomial or LUT approximations, packing optimizations,
-bootstrapping or native runtimes, provided the frozen inference target and
-minimum 128-bit classical security requirement are satisfied. Evidence for novel
-schemes needs review; model correctness alone does not demonstrate security.
-
-The copyable CKKS code now packs event rows and targets the same fixed trained
-GCN as all submissions, without an eight-node cap. Its full encrypted execution
-has not been validated; the historical scalar-toy results must not be reused as
-evidence for it. This release contains no OpenFHE or Concrete implementations.
+The benchmark does not prescribe encrypted activation or normalization algorithms.
+Submitters document their choices in their README and `describe()` output and
+report their compute-thread configuration through `thread_report()`.

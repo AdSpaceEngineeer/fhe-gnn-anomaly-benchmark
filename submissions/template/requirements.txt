@@ -1,1 +1,1 @@
-# Add only the dependencies required by your implementation.
+# Declare dependencies of this submission, separately from harness dependencies.

@@ -1,0 +1,22 @@
+{
+  "format_version": 2,
+  "id": "scam-list-gcn-relu-100k-v2",
+  "workload": "gcn",
+  "purpose": "frozen_inference_benchmark",
+  "activation": "relu",
+  "atol": 0.001,
+  "rtol": 0.001,
+  "source_archive_sha256": "0daacbbc624e7886801c52ed86c2e5f5dc9b88a43f96eb559877283a803611d9",
+  "original_model_sha256": "7f393b93f721d43a211e6f82e158f296d92e80dc77d5a843ea4ed20bf71fac96",
+  "source_reference_max_absolute_error": 3.832322786223585e-06,
+  "sha256": {
+    "data.json": "918ce909d11e67b11d08d1430c5444c46d7d4cc32c24cf98d47a25d3f0537b54",
+    "weights.json": "097ade05a13960d1049033871db26b46a5528f6be29c3d17315194d9964ad0f1",
+    "reference.json": "3e0e762cc6dabd4ca443a697578af822542cf49ce3881c36f9ed78fce3b2991e",
+    "baseline_metrics.json": "5b3173c3cdffd737f6c99c3e3a5d563a3ebd96a7efb2cc3b61264ebfbd874864",
+    "reload_verification.json": "3203d82f6b8ea91eb6ce6df12dd587bda5983f2c902885e9c6c0d0d91a695cfd",
+    "transactions.csv": "da07abe6278069edb3b6831d7676190425af3d197bb7a22deed2bf2039b26f48",
+    "scam_list_gcn.pt": "7f393b93f721d43a211e6f82e158f296d92e80dc77d5a843ea4ed20bf71fac96",
+    "software_versions.json": "ec8ae52f6eb71997959e68f62ff2bfc31165ad993e33810ea6f592eced125bc2"
+  }
+}

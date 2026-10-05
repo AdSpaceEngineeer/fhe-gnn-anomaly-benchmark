@@ -58,11 +58,19 @@ def comparison_markdown(report):
               "| Metric | Frozen plaintext | Submission |", "|---|---:|---:|"]
     def row(label, reference, submitted):
         lines.append(f"| {label} | {_number(reference)} | {_number(submitted)} |")
-    for label, key in (("Recall", "recall"), ("F1", "f1"), ("Accuracy", "accuracy")):
+    for label, key in (("Accuracy (primary)", "accuracy"), ("ROC-AUC (primary)", "roc_auc"),
+                       ("Recall", "recall"), ("F1", "f1"), ("Precision", "precision"),
+                       ("Average precision", "average_precision")):
+        values = [r["verification"]["quality"][key] for r in runs]
         row(label, runs[0]["verification"]["plaintext_quality"][key],
-            mean(r["verification"]["quality"][key] for r in runs))
+            mean(values) if all(v is not None for v in values) else None)
     row("Maximum score error (worst run)", 0, max(r["verification"]["max_absolute_error"] for r in runs))
     row("Prediction agreement", 1, mean(r["verification"]["prediction_agreement"] for r in runs))
+    row("Requested threads", None, report['threads_requested'])
+    row("Reported evaluator compute threads", None,
+        max(r['stages']['evaluate']['submission_thread_report']['compute_threads'] for r in runs))
+    row("Sampled evaluator OS threads (peak)", None,
+        max(r['stages']['evaluate'].get('sampled_process_tree_peak_os_threads', 0) for r in runs))
     row("Key generation (s, once)", None, report["keygen"]["wall_seconds"])
     for stage in ("encrypt", "evaluate", "decrypt"):
         row(f"{stage.capitalize()} wall time (s)", None, mean(r["stages"][stage]["wall_seconds"] for r in runs))

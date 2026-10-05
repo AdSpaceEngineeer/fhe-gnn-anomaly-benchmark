@@ -66,7 +66,7 @@ def load_adapter(path):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     adapter = module.Adapter()
-    for name in ("describe", "keygen", "encrypt", "evaluate", "decrypt"):
+    for name in ("configure", "describe", "thread_report", "keygen", "encrypt", "evaluate", "decrypt"):
         if not callable(getattr(adapter, name, None)):
             raise ValueError("Adapter missing method: " + name)
     return adapter
@@ -101,6 +101,7 @@ def set_threads(threads):
 def run_measured(command, log, timeout, interval=0.01):
     """Sample aggregate process-tree RSS, including child native-library workers."""
     peak = 0
+    peak_threads = 0
     start = time.perf_counter()
     with Path(log).open("w", encoding="utf-8") as output:
         proc = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT)
@@ -110,12 +111,15 @@ def run_measured(command, log, timeout, interval=0.01):
                 try:
                     family = [process] + process.children(recursive=True)
                     rss = 0
+                    threads = 0
                     for child in family:
                         try:
                             rss += child.memory_info().rss
+                            threads += child.num_threads()
                         except psutil.NoSuchProcess:
                             pass
                     peak = max(peak, rss)
+                    peak_threads = max(peak_threads, threads)
                 except psutil.NoSuchProcess:
                     pass
                 if time.perf_counter() - start > timeout:
@@ -135,4 +139,5 @@ def run_measured(command, log, timeout, interval=0.01):
         tail = Path(log).read_text(encoding="utf-8")[-3000:]
         raise RuntimeError("Stage failed (exit %s):\n%s" % (proc.returncode, tail))
     return {"wall_seconds": elapsed, "sampled_process_tree_peak_rss_bytes": peak,
+            "sampled_process_tree_peak_os_threads": peak_threads,
             "memory_sample_interval_seconds": interval}

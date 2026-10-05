@@ -1,19 +1,18 @@
 # Submissions
 
-For a ready-written CKKS starting point, copy the entire `toy_ckks/` directory to
-`my_method/`, install its requirements and run `--submission my_method`. It receives
-the same fixed trained workload automatically. The revised CKKS example has not
-yet completed a live encrypted validation run; no such result is claimed.
+Copy `template/` to a new directory named after your method. Implement the
+adapter methods, describe the algorithm/security/parallelism in `README.md`,
+and list additional packages in `requirements.txt`. Do not edit the harness or
+frozen artifacts to accommodate a submission.
 
-Alternatively copy `template/` to a new directory and implement its `Adapter` class. The
-required integration file is `adapter.py`; supporting Python/native sources,
-build instructions and dependencies belong alongside it. Do not edit `harness/`
-or frozen artifacts to accommodate a submission.
+The runner selects `gcn` or `tam` explicitly. A submission declares which
+workloads it supports and may implement either or both. See the
+[interface contract](../docs/submission-contract.md).
 
-Include a README explaining the method, parameters, encoding/packing,
-activation approximation, security evidence, dependencies and limitations.
-Keep optional backend/hardware details private if desired, but security-critical
-parameters and evidence are required for a comparable submission.
+`plaintext_debug/` verifies installation and harness execution without
+cryptography. It requires `--debug-plaintext` and cannot qualify as an FHE result.
 
-`toy_ckks/` implements native SEAL CKKS arithmetic. `plaintext_debug/` is a pipeline
-test with no encryption. See [the contract](../docs/submission-contract.md).
+[`toy_ckks/`](toy_ckks/README.md) is an incomplete, GCN-only CKKS scaffold. Its
+small crypto round trip is separate from the benchmark. Replace its encrypted
+ReLU placeholder and supply suitable full-circuit parameters before using it
+as a complete submission; the unchanged scaffold is rejected at readiness check.

@@ -36,6 +36,8 @@ def inspect_public_context(description, public_keys, threads):
         return inspect_native_context(description, public_keys)
     if description.get("security", {}).get("validator") != "seal_tc128":
         return None
+    if set(public_keys) != {"context.bin"}:
+        raise ValueError('TenSEAL evaluator bundle must contain only the public context.bin')
     import tenseal as ts
     context = ts.context_from(public_keys["context.bin"], n_threads=threads)
     if context.has_secret_key():

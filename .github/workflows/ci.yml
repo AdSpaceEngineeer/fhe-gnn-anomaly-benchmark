@@ -1,14 +1,5 @@
-name: Harness tests
-on:
-  push:
-  pull_request:
-  workflow_dispatch:
-    inputs:
-      run_ckks:
-        description: 'Run the slow live CKKS integration test'
-        required: false
-        default: false
-        type: boolean
+name: Benchmark tests
+on: [push, pull_request, workflow_dispatch]
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
@@ -22,18 +13,5 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           cache: pip
-      - run: python -m pip install -r requirements-dev.txt -r submissions/toy_ckks/requirements.txt
+      - run: python -m pip install -r requirements-dev.txt
       - run: python -m pytest -q
-  ckks:
-    if: github.event_name == 'workflow_dispatch' && inputs.run_ckks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: pip
-      - run: python -m pip install -r requirements-dev.txt -r submissions/toy_ckks/requirements.txt
-      - run: python -m pytest -q tests/test_ckks.py
-        env:
-          RUN_FHE_TESTS: '1'

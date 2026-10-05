@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 import psutil
 from harness.utils import load_adapter, read_json, write_json, read_blobs, write_blobs, set_threads
+from harness.threading_report import validate_thread_report
 
 
 def main():
@@ -13,10 +14,12 @@ def main():
     parser.add_argument("--adapter", required=True)
     parser.add_argument("--io", required=True)
     parser.add_argument("--threads", type=int, required=True)
+    parser.add_argument("--workload", choices=("gcn", "tam"), required=True)
     args = parser.parse_args()
     set_threads(args.threads)
     root = Path(args.io)
     adapter = load_adapter(args.adapter)
+    adapter.configure(args.workload, args.threads)
     start = time.perf_counter()
     extra = {}
     if args.stage == "describe":
@@ -59,7 +62,8 @@ def main():
         if sys.platform != "darwin":
             peak *= 1024
     write_json(root / (args.stage + "_measurement.json"),
-               {"operation_and_io_seconds": seconds, "process_lifetime_peak_rss_bytes": peak, **extra})
+               {"operation_and_io_seconds": seconds, "process_lifetime_peak_rss_bytes": peak,
+                "submission_thread_report": validate_thread_report(adapter.thread_report(args.stage, args.threads)), **extra})
 
 
 if __name__ == "__main__":

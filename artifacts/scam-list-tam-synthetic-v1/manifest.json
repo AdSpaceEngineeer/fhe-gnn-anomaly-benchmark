@@ -1,0 +1,24 @@
+{
+  "format_version": 2,
+  "id": "scam-list-tam-synthetic-v1",
+  "workload": "tam",
+  "purpose": "frozen_inference_benchmark",
+  "activation": "prelu",
+  "atol": 0.001,
+  "rtol": 0.001,
+  "source_archive_sha256": "04c04895eff8bfcd81ad81e5d495e00baad94d924a49842af50c55bf9a79bcb3",
+  "original_model_sha256": "d042ddbecffdf3c6b90238e5c85f761508bfb9c9bc3c2db61461c8b866d335c5",
+  "source_reference_max_absolute_error": 2.965633595364281e-07,
+  "sha256": {
+    "data.json": "76405f1e12170915dde1a9e5baa00213c21105705773047a9bef6c542807095c",
+    "weights.json": "ea6320f81f14ecb2907ef07864be71d8620c9cbc9ec0c4638bffa39fd055925c",
+    "reference.json": "9741833fa5e1a2232a2568b3662388c7a1880197ac028ed7fab19e60151c04b3",
+    "baseline_metrics.json": "ad487fc036f808554d3de6b0328d45604e987147d6c7d6975fee73d9921c0cbd",
+    "reload_verification.json": "00926c896cb8b044d3748aabed79e7710dfa1e3a50a49e7a848de696f9450965",
+    "accounts.csv": "1c6d5bc6a4ed86d0afd5ac7ec903332a2ee46c47606a76878e6af0f6040a1352",
+    "transfer_edges.csv": "18fe2dea4832f1fa8acfb772b8f76db905bb0f865693e808241db112655f3f57",
+    "scam_list_tam.pt": "d042ddbecffdf3c6b90238e5c85f761508bfb9c9bc3c2db61461c8b866d335c5",
+    "software_versions.json": "fc3f4aa8b197480d495cc538d8969bed774776ff2738559a5366caf25c45bf9d"
+  },
+  "norm_epsilon": 1e-12
+}

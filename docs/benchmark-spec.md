@@ -1,96 +1,32 @@
-# Benchmark specification, version 1
+# Benchmark specification
 
-## Objective and industry grounding
+This benchmark evaluates FHE inference for graph-based scam, crime and fraud
+prevention workloads. Three numeric features are encrypted in each workload;
+graph structure, remaining model features and frozen weights are public.
+The workloads use synthetic data and do not establish deployment performance
+on real financial crime.
 
-Measure encrypted GCN inference for scam, crime and fraud prevention using
-sensitive numeric transaction features. Graph relationships represent repeated
-source/beneficiary activity. This is a synthetic industry analogy, not a claim
-of deployment performance or regulatory certification.
+| Workload | Input | Network | Score |
+|---|---|---|---|
+| Scam_List_GCN | 100,000 transfer events, 8 features | 8 -> 64 -> 32 -> 64 -> 8; three ReLUs | Mean squared reconstruction error on three sensitive features |
+| Scam_List_TAM | 39,357 accounts, 10 features | 10 -> 64 -> 32; two learned PReLUs | One minus mean neighbor cosine similarity |
 
-Ma et al.'s 2023 GNN fraud-detection survey motivated the relational model choice.
-Ding's [DOMINANT implementation](https://github.com/kaize0409/GCN_AnomalyDetection_pytorch)
-motivated the attributed graph autoencoder. This benchmark simplifies that design
-to attribute reconstruction only: there is no structure decoder or adjacency
-reconstruction loss. Synthetic transaction events replace the source repository's
-citation/social-network data.
+TAM is the higher computational challenge workload because it adds norm-dependent
+normalization and learned piecewise activation to encrypted graph inference.
+This is not a claim of better detection or guaranteed higher wall time. Models
+use different datasets and cannot isolate architecture effects in a direct
+cross-workload accuracy or runtime comparison.
 
-## Workload
+Training and graph preparation are outside the timed benchmark. The repository
+publishes model weights, preprocessing, graph structures, splits, thresholds and
+reference scores. Users implement submissions, select a workload and run inference.
+Accuracy and ROC-AUC are primary. Other quality and systems metrics are specified
+in [Measurements](measurements.md).
 
-A fixed, transductive graph with eight numeric features and four GCN layers:
+The ReLU GCN replaces the earlier polynomial reference. The polynomial model,
+its artifacts and its results are not active workloads; their prior versions
+remain in Git history. No polynomial activation or encrypted approximation is
+part of either current reference model.
 
-```text
-A_norm = D^(-1/2) (A + I) D^(-1/2)
-H1 = p(A_norm X W1 + b1)
-H2 = p(A_norm H1 W2 + b2)
-H3 = p(A_norm H2 W3 + b3)
-X_hat = A_norm H3 W4 + b4
-p(z) = z + z^2/8
-s_i = (1/3) sum_{m in S} (X_hat[i,m] - X[i,m])^2
-predicted_scam_i = (s_i >= fixed_validation_threshold)
-```
-
-The input is the full frozen graph, even when metrics use only test nodes.
-Training excludes test labels from the loss but sees their node features/graph
-through the transductive forward pass. This is not a chronological held-out
-deployment evaluation. The synthetic generator deliberately makes anomalies
-distinguishable; high scores do not establish real-world fraud generalization.
-
-The fixed widths are 8/64/32/64/8. There is one benchmark workload. The former
-initialized-weight miniature GCN is retained only as an internal test fixture.
-The toy CKKS submission refers to a simple encryption implementation of the
-fixed trained model, not another GCN or workload size.
-
-## Data and encryption boundary
-
-The normalized sensitive fields are transferred amount, running daily transferred
-total, and prior report count. Amounts receive log1p before standardization;
-report count is standardized directly. Scaler statistics are frozen from the
-training split. Payment channel (four indicators), daily transaction count,
-graph topology and weights are public under the v1 threat model.
-
-The graph links events sharing the same source account or the same destination
-account, connecting up to three preceding/following events within each sorted
-account sequence. This is a count window, not a fixed elapsed-time window;
-cross-role matches are not added by the original generator. Raw account strings
-are graph-construction inputs, not encrypted numeric features.
-
-Sensitivity is a chosen confidentiality boundary. Real deployments may also need
-to protect graph links, public behavioral features, preprocessing statistics or
-model weights; v1 does not promise that protection. All released data are synthetic.
-
-## Fixed comparison policy
-
-Use the same dataset, normalized graph, weights, preprocessing, activation target,
-sensitive columns, threshold and splits. Numerical approximations/packing
-optimizations must be declared; they may not change the target model.
-At least 128-bit classical security is required. The submission contract explains
-evidence review, key handling and the actual-context check for the example.
-
-The registered `scam-list-gcn-100k-v1` bundle contains a newly frozen September
-2026 retraining run with its exact data, checkpoint and independently verified
-reference scores. It is not the missing checkpoint from the earlier reported
-run. The old miniature fixture is not registered as a benchmark. Full-graph
-plaintext verification has passed; a full-graph FHE result is not yet provided.
-
-## Measurements and execution
-
-See [the contract](submission-contract.md), [measurement definitions](measurements.md)
-and the root quickstart. Recall/F1 and numerical agreement are measured separately
-from latency, throughput, memory, storage and communication. Training is never
-included. The measurement categories follow
-[the FHE Benchmarking Suite](https://fhe-benchmarking.github.io/).
-
-## Ciphertext operations
-
-| Operation | Workload role |
-|---|---|
-| Ciphertext + plaintext | Bias and public feature contribution |
-| Ciphertext + ciphertext | Graph/feature sums and score reduction |
-| Ciphertext x plaintext | Frozen graph coefficients and model weights |
-| Matrix multiplication | Linear GCN projections, possibly decomposed into scalar products |
-| Ciphertext - ciphertext | Sensitive feature reconstruction difference |
-| Ciphertext square | Squared reconstruction error |
-| Polynomial activation | Three hidden nonlinear transformations |
-
-These operations do not have a universal overhead ranking: packing, rotations,
-multiplicative depth, parameter sizes and backend determine cost.
+See the [submission interface](submission-contract.md), [GCN dataset](dataset.md),
+[TAM dataset](dataset-tam.md) and [operation comparison](operations.md).

@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "reload_max_absolute_error": 5.937194824667813e-08,
+  "independent_numpy_max_absolute_error": 2.9666708878384185e-07,
+  "reload_tolerance": {
+    "atol": 1e-06,
+    "rtol": 1e-06
+  },
+  "independent_tolerance": {
+    "atol": 1e-05,
+    "rtol": 1e-05
+  }
+}
