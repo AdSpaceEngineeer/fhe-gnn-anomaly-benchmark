@@ -30,7 +30,12 @@
             "compute_threads": 2,
             "worker_processes": 1,
             "threading_model": "NumPy/SciPy; BLAS thread limit set by harness environment"
-          }
+          },
+          "memory_sampling_status": "available",
+          "memory_sample_attempts": null,
+          "memory_samples_observed": null,
+          "memory_samples_incomplete": null,
+          "memory_sampling_provenance": "legacy_peak_only"
         },
         "evaluate": {
           "wall_seconds": 2.0227162999944994,
@@ -45,7 +50,12 @@
             "threading_model": "NumPy/SciPy; BLAS thread limit set by harness environment"
           },
           "harness_file_io_seconds": 0.6668697999994038,
-          "adapter_call_seconds": 0.7328181999910157
+          "adapter_call_seconds": 0.7328181999910157,
+          "memory_sampling_status": "available",
+          "memory_sample_attempts": null,
+          "memory_samples_observed": null,
+          "memory_samples_incomplete": null,
+          "memory_sampling_provenance": "legacy_peak_only"
         },
         "decrypt": {
           "wall_seconds": 0.7814741000038339,
@@ -58,7 +68,12 @@
             "compute_threads": 2,
             "worker_processes": 1,
             "threading_model": "NumPy/SciPy; BLAS thread limit set by harness environment"
-          }
+          },
+          "memory_sampling_status": "available",
+          "memory_sample_attempts": null,
+          "memory_samples_observed": null,
+          "memory_samples_incomplete": null,
+          "memory_sampling_provenance": "legacy_peak_only"
         }
       },
       "verification": {
@@ -146,7 +161,12 @@
       "compute_threads": 2,
       "worker_processes": 1,
       "threading_model": "NumPy/SciPy; BLAS thread limit set by harness environment"
-    }
+    },
+    "memory_sampling_status": "available",
+    "memory_sample_attempts": null,
+    "memory_samples_observed": null,
+    "memory_samples_incomplete": null,
+    "memory_sampling_provenance": "legacy_peak_only"
   },
   "description": {
     "name": "plaintext_debug",
@@ -172,7 +192,12 @@
       "compute_threads": 2,
       "worker_processes": 1,
       "threading_model": "NumPy/SciPy; BLAS thread limit set by harness environment"
-    }
+    },
+    "memory_sampling_status": "available",
+    "memory_sample_attempts": null,
+    "memory_samples_observed": null,
+    "memory_samples_incomplete": null,
+    "memory_sampling_provenance": "legacy_peak_only"
   },
   "security_check": {
     "wall_seconds": 0.7022066000063205,
@@ -185,7 +210,12 @@
       "compute_threads": 2,
       "worker_processes": 1,
       "threading_model": "NumPy/SciPy; BLAS thread limit set by harness environment"
-    }
+    },
+    "memory_sampling_status": "available",
+    "memory_sample_attempts": null,
+    "memory_samples_observed": null,
+    "memory_samples_incomplete": null,
+    "memory_sampling_provenance": "legacy_peak_only"
   },
   "eligible_for_comparison": false,
   "timing_summary": {
@@ -194,5 +224,6 @@
   },
   "network_transfer_seconds": null,
   "key_rotation_seconds": null,
-  "comparison_scope": "Only the identical registered artifact ID and manifest; internal fixtures are not benchmark results"
+  "comparison_scope": "Only the identical registered artifact ID and manifest; internal fixtures are not benchmark results",
+  "memory_reporting_annotation": "Historical run: positive recorded peaks establish observations, but sample counts and completeness were not recorded. Zero/missing sampled peaks are now null. Original timings, nonzero memory values, results and execution-time source hashes are retained; comparison tables were regenerated, not remeasured."
 }

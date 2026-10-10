@@ -92,8 +92,13 @@ def test_complete_pipeline(tmp_path, workload):
     stages = report['runs'][0]['stages']
     assert stages['evaluate']['submission_thread_report']['compute_threads'] == 1
     assert stages['evaluate']['sampled_process_tree_peak_os_threads'] >= 1
+    for stage in stages.values():
+        assert stage['memory_sampling_status'] in ('available', 'partial', 'unavailable')
+        assert stage['memory_samples_observed'] <= stage['memory_sample_attempts']
+        assert (stage['sampled_process_tree_peak_rss_bytes'] is None) == (stage['memory_samples_observed'] == 0)
     table = (out / 'comparison.md').read_text(encoding='utf-8')
     assert 'ROC-AUC (primary)' in table and 'Reported evaluator compute threads' in table
+    assert 'Memory sampling by stage' in table
 
 
 def test_mismatched_workload_rejected(tmp_path):

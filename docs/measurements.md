@@ -29,6 +29,18 @@ count shared pages more than once. Key, ciphertext and persisted intermediate
 sizes exclude transient in-memory objects. OS thread sampling is not a count of
 active CPU cores or proof of a submission's thread declaration.
 
+Each stage in `report.json` includes `memory_sampling_status`: `available`
+(usable complete snapshots), `partial` (some processes/snapshots missed), or
+`unavailable` (no usable positive RSS observation). The sampled peak is `null`
+when unavailable, never a placeholder zero. `memory_sample_attempts`,
+`memory_samples_observed` and `memory_samples_incomplete` describe coverage;
+incomplete attempts include missing and partially observed snapshots.
+Availability does not guarantee that brief peaks were captured.
+`comparison.md` shows sampling status, observation count, sampled peak and
+process high-water RSS separately, including completed stages of failed runs.
+Historical examples retain their original measurements and mark sample coverage
+as unknown; unavailable sample counts are `null`, not invented retrospectively.
+
 Communication measures bytes, not actual network transport. Key upload time,
 rotation time and network latency remain null, not zero. Key generation cost is
 reported once and amortized across repetitions. No plaintext runtime baseline is

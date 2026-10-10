@@ -31,6 +31,20 @@ Completed runs: 1. Quality uses the fixed test split and threshold.
 | Persisted intermediates (MiB) | — | 0 |
 | Communication (MiB/run, amortized) | — | 58.2711 |
 
+Memory sampling by stage:
+
+| Stage | Sampling | RSS observations | Sampled peak MiB | Process high-water MiB |
+|---|---|---:|---:|---:|
+| description_stage | available (legacy; coverage unknown) | — | 59.2188 | 55.043 |
+| keygen | available (legacy; coverage unknown) | — | 59.2148 | 55.1055 |
+| security_check | available (legacy; coverage unknown) | — | 59.0312 | 54.9297 |
+| run 1: encrypt | available (legacy; coverage unknown) | — | 86.0469 | 88.3438 |
+| run 1: evaluate | available (legacy; coverage unknown) | — | 353.465 | 369.723 |
+| run 1: decrypt | available (legacy; coverage unknown) | — | 71.1016 | 69.2969 |
+
+Unavailable sampling is not zero memory use. Partial sampling missed some processes or snapshots.
+Available samples can still miss short peaks. Process high-water RSS is reported separately.
+
 Values are means across completed runs unless labelled otherwise. MiB = 2^20 bytes.
 A dash means not measured, not zero. The frozen reference supplies quality, not matched plaintext timing.
 Server-reported timings are additional detail; they never replace or subtract from harness wall times.

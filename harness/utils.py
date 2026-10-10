@@ -98,30 +98,59 @@ def set_threads(threads):
         os.environ[name] = str(threads)
 
 
+def sample_process_tree(process):
+    """Observed RSS/threads and whether the RSS snapshot was complete."""
+    complete = True
+    try:
+        family = [process] + process.children(recursive=True)
+    except psutil.Error:
+        family, complete = [process], False
+    rss, threads = [], []
+    for child in family:
+        try:
+            value = child.memory_info().rss
+            if value > 0:
+                rss.append(value)
+            else:
+                complete = False
+        except psutil.Error:
+            complete = False
+        try:
+            threads.append(child.num_threads())
+        except psutil.Error:
+            pass
+    return (sum(rss) if rss else None, sum(threads) if threads else None, complete)
+
+
+def memory_sampling_summary(peak, attempts, observed, incomplete):
+    return dict(sampled_process_tree_peak_rss_bytes=peak if observed else None,
+                memory_sampling_status=('unavailable' if not observed else
+                                        'partial' if incomplete else 'available'),
+                memory_sample_attempts=attempts, memory_samples_observed=observed,
+                memory_samples_incomplete=incomplete,
+                memory_sampling_provenance='measured')
+
+
 def run_measured(command, log, timeout, interval=0.01):
     """Sample aggregate process-tree RSS, including child native-library workers."""
-    peak = 0
+    peak = None
     peak_threads = 0
+    attempts = observed = incomplete = 0
     start = time.perf_counter()
     with Path(log).open("w", encoding="utf-8") as output:
         proc = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT)
         process = psutil.Process(proc.pid)
         try:
             while proc.poll() is None:
-                try:
-                    family = [process] + process.children(recursive=True)
-                    rss = 0
-                    threads = 0
-                    for child in family:
-                        try:
-                            rss += child.memory_info().rss
-                            threads += child.num_threads()
-                        except psutil.NoSuchProcess:
-                            pass
-                    peak = max(peak, rss)
+                rss, threads, complete = sample_process_tree(process)
+                attempts += 1
+                if rss is not None:
+                    observed += 1
+                    peak = rss if peak is None else max(peak, rss)
+                if not complete or rss is None:
+                    incomplete += 1
+                if threads is not None:
                     peak_threads = max(peak_threads, threads)
-                except psutil.NoSuchProcess:
-                    pass
                 if time.perf_counter() - start > timeout:
                     raise TimeoutError("Stage exceeded --timeout-seconds; see " + str(log))
                 time.sleep(interval)
@@ -138,6 +167,6 @@ def run_measured(command, log, timeout, interval=0.01):
     if proc.returncode:
         tail = Path(log).read_text(encoding="utf-8")[-3000:]
         raise RuntimeError("Stage failed (exit %s):\n%s" % (proc.returncode, tail))
-    return {"wall_seconds": elapsed, "sampled_process_tree_peak_rss_bytes": peak,
+    return {"wall_seconds": elapsed, **memory_sampling_summary(peak, attempts, observed, incomplete),
             "sampled_process_tree_peak_os_threads": peak_threads,
             "memory_sample_interval_seconds": interval}

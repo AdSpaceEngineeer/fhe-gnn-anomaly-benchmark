@@ -83,6 +83,17 @@ demonstrates key setup, encryption and decryption. Its encrypted-ReLU placeholde
 must be implemented by the submitter. The unchanged example is rejected before
 expensive benchmark execution; no activation approximation is supplied.
 
+### Guidance for first-time FHE engineers
+
+Review the [model internals and observed ranges](docs/model-internals.md).
+Measure sample ciphertext/key sizes and estimate storage before a full run;
+check RAM and personal disk quotas separately. First exercise stage interfaces
+and reporting with a small, clearly labelled non-benchmark diagnostic of your
+submission. Plan depth across GCN's four graph convolutions, three ReLUs and
+squared-error scoring; an isolated activation test does not establish full-model
+feasibility. TAM additionally requires norm-dependent normalization. Running this
+benchmark does not itself guarantee cryptographic security.
+
 ## Metrics and security
 
 The runner writes `report.json` and a compact `comparison.md` table.
@@ -92,7 +103,7 @@ The runner writes `report.json` and a compact `comparison.md` table.
 | Model quality | **Accuracy and ROC-AUC**; Recall, F1, Precision and Average Precision |
 | Fidelity | Score errors, prediction agreement and numerical verification |
 | Latency and throughput | Key generation; encryption, evaluation and decryption wall times; total inference; nodes/second |
-| Memory | Per-stage process high-water RAM and sampled process-tree peak RAM |
+| Memory | Per-stage process high-water RAM, sampled process-tree peak RAM and sampling availability |
 | Storage | Serialized keys, input/output ciphertexts and persisted intermediates |
 | Communication | Serialized client/server payload bytes; one-time and amortized key uploads |
 | Parallelism | Requested threads, submitter-reported compute threads/processes and sampled OS threads |

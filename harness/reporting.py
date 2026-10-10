@@ -43,6 +43,37 @@ def _escape(value):
     return str(value).replace("|", "\\|").replace("\n", " ").replace("\r", " ")
 
 
+def stage_measurements(report):
+    for name in ('description_stage', 'keygen', 'security_check'):
+        if report.get(name):
+            yield name, report[name]
+    for index, run in enumerate(report.get('runs', [])):
+        for name, measurement in run.get('stages', {}).items():
+            yield f'run {index + 1}: {name}', measurement
+
+
+def memory_table(report):
+    measurements = list(stage_measurements(report))
+    if not measurements:
+        return []
+    lines = ['', 'Memory sampling by stage:', '',
+             '| Stage | Sampling | RSS observations | Sampled peak MiB | Process high-water MiB |',
+             '|---|---|---:|---:|---:|']
+    for name, m in measurements:
+        peak = m.get('sampled_process_tree_peak_rss_bytes')
+        peak = peak if peak is not None and peak > 0 else None
+        status = m.get('memory_sampling_status', 'available' if peak is not None else 'unavailable')
+        if m.get('memory_sampling_provenance') == 'legacy_peak_only' or 'memory_sampling_status' not in m:
+            status += ' (legacy; coverage unknown)'
+        high = m.get('process_lifetime_peak_rss_bytes')
+        lines.append(f"| {_escape(name)} | {_escape(status)} | {_number(m.get('memory_samples_observed'))} | "
+                     f"{_number(peak / 2**20 if peak is not None else None)} | "
+                     f"{_number(high / 2**20 if high is not None else None)} |")
+    lines += ['', 'Unavailable sampling is not zero memory use. Partial sampling missed some processes or snapshots.',
+              'Available samples can still miss short peaks. Process high-water RSS is reported separately.']
+    return lines
+
+
 def comparison_markdown(report):
     runs = report.get("runs", [])
     name = _escape(report.get("submission", "unknown"))
@@ -53,6 +84,7 @@ def comparison_markdown(report):
              f"Eligible FHE comparison: **{bool(report.get('eligible_for_comparison', False))}**", ""]
     if not runs:
         lines += ["No completed inference runs; no performance or quality comparison is available."]
+        lines += memory_table(report)
         return "\n".join(lines) + "\n"
     lines += [f"Completed runs: {len(runs)}. Quality uses the fixed test split and threshold.", "",
               "| Metric | Frozen plaintext | Submission |", "|---|---:|---:|"]
@@ -76,10 +108,10 @@ def comparison_markdown(report):
         row(f"{stage.capitalize()} wall time (s)", None, mean(r["stages"][stage]["wall_seconds"] for r in runs))
     row("Inference wall time (s)", None, mean(r["inference_wall_seconds"] for r in runs))
     row("Evaluator throughput (nodes/s)", None, mean(r["throughput_nodes_per_second"] for r in runs))
-    measurements = [report.get("keygen", {}), report.get("security_check", {})]
-    measurements += [stage for r in runs for stage in r["stages"].values()]
-    peak = max(max(m.get("sampled_process_tree_peak_rss_bytes", 0), m.get("process_lifetime_peak_rss_bytes", 0)) for m in measurements)
-    row("Peak stage RAM (MiB, maximum)", None, peak / 2**20)
+    peaks = [m.get(key) for _, m in stage_measurements(report)
+             for key in ('sampled_process_tree_peak_rss_bytes', 'process_lifetime_peak_rss_bytes')
+             if m.get(key) is not None and m[key] > 0]
+    row("Peak stage RAM (MiB, maximum)", None, max(peaks) / 2**20 if peaks else None)
     for label, key in (("Public/evaluation keys (MiB)", "public_and_evaluation_keys"),
                        ("Input payload (MiB)", "encrypted_input"), ("Output payload (MiB)", "encrypted_output"),
                        ("Persisted intermediates (MiB)", "persisted_intermediates")):
@@ -88,6 +120,7 @@ def comparison_markdown(report):
                       ("client_to_server_input", "server_to_client_result", "public_workload_upload_once", "key_upload_once"))
                       for r in runs]
     row("Communication (MiB/run, amortized)", None, mean(communications) / 2**20)
+    lines += memory_table(report)
     timing_names = sorted({name for r in runs for name in (r.get("server_reported_steps") or {})})
     if timing_names:
         lines += ["", "Optional server-reported seconds (not independently verified):", "",

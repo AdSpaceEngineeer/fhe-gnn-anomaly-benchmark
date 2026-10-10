@@ -11,3 +11,7 @@ values describe these checks only; no FHE performance claim is made.
 Both reports use registered frozen artifacts, fixed thresholds and test splits.
 They include required thread declarations and sampled process-tree measurements.
 Only reports/tables are published, not private run directories.
+
+Memory-availability annotations were added without rerunning these historical
+checks. Positive recorded peaks are retained; sample counts and completeness are
+unknown. The reports retain their original execution-time source hashes.
