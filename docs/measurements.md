@@ -5,6 +5,19 @@ submissions only on the same artifact ID and manifest checksum. Record thread
 configuration alongside results. Hardware reporting is optional via
 `--include-hardware`; meaningful runtime comparisons require comparable hardware.
 
+The optional hardware summary contains OS, architecture, CPU description and
+system logical CPU count. It is collected only with `--include-hardware` and
+appears in both reports; no separate hardware file is required. Blank or
+undisclosed fields are `null` in new JSON reports. Older reports may omit them.
+System logical CPUs do not indicate the CPUs allocated to the process or its
+configured compute threads.
+
+Human-readable reports display missing values as **Not reported**, including
+hardware fields and unavailable measurements. Numeric JSON fields remain `null`,
+not text placeholders. Genuine zero measurements remain zero. Explicit sampling
+statuses (`available`, `partial`, `unavailable`) are retained and describe sample
+coverage, not a missing numeric value.
+
 | Measurement | Definition |
 |---|---|
 | Accuracy and ROC-AUC | Primary test-set quality metrics using decrypted scores |
@@ -39,7 +52,7 @@ Availability does not guarantee that brief peaks were captured.
 `comparison.md` shows sampling status, observation count, sampled peak and
 process high-water RSS separately, including completed stages of failed runs.
 Historical examples retain their original measurements and mark sample coverage
-as unknown; unavailable sample counts are `null`, not invented retrospectively.
+as Not reported; unavailable sample counts are `null`, not invented retrospectively.
 
 Communication measures bytes, not actual network transport. Key upload time,
 rotation time and network latency remain null, not zero. Key generation cost is

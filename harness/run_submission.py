@@ -30,6 +30,17 @@ def parse_args(argv=None):
     return args
 
 
+def hardware_summary(enabled=False):
+    """Keep undisclosed/unavailable metadata null; never collect without opt-in."""
+    summary = dict.fromkeys(('os', 'machine', 'processor', 'logical_cpus'))
+    if enabled:
+        import platform
+        summary.update(os=platform.system(), machine=platform.machine(),
+                       processor=platform.processor(), logical_cpus=os.cpu_count())
+    return {key: None if isinstance(value, str) and not value.strip() else value
+            for key, value in summary.items()}
+
+
 def main(argv=None):
     args = parse_args(argv)
     set_threads(args.threads)
@@ -65,10 +76,7 @@ def main(argv=None):
                                           for p in sorted(adapter.parent.rglob("*"))
                                           if p.is_file() and p.suffix in (".py", ".md", ".txt", ".cpp", ".h", ".json")
                                           and "__pycache__" not in p.parts}
-    if args.include_hardware:
-        import platform
-        report["hardware"] = {"os": platform.system(), "machine": platform.machine(),
-                              "processor": platform.processor(), "logical_cpus": os.cpu_count()}
+    report["hardware"] = hardware_summary(args.include_hardware)
     # Absolute import path allows stage workers to execute outside the repository.
     os.environ["PYTHONPATH"] = str(ROOT) + os.pathsep + os.environ.get("PYTHONPATH", "")
     def stage(name, location):

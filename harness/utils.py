@@ -134,7 +134,7 @@ def memory_sampling_summary(peak, attempts, observed, incomplete):
 def run_measured(command, log, timeout, interval=0.01):
     """Sample aggregate process-tree RSS, including child native-library workers."""
     peak = None
-    peak_threads = 0
+    peak_threads = None
     attempts = observed = incomplete = 0
     start = time.perf_counter()
     with Path(log).open("w", encoding="utf-8") as output:
@@ -150,7 +150,7 @@ def run_measured(command, log, timeout, interval=0.01):
                 if not complete or rss is None:
                     incomplete += 1
                 if threads is not None:
-                    peak_threads = max(peak_threads, threads)
+                    peak_threads = threads if peak_threads is None else max(peak_threads, threads)
                 if time.perf_counter() - start > timeout:
                     raise TimeoutError("Stage exceeded --timeout-seconds; see " + str(log))
                 time.sleep(interval)

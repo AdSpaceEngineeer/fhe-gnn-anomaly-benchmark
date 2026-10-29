@@ -89,6 +89,8 @@ def test_complete_pipeline(tmp_path, workload):
     report = json.loads((out / 'report.json').read_text())
     assert report['status'] == 'passed' and not report['eligible_for_comparison']
     assert report['primary_metrics'] == ['accuracy', 'roc_auc']
+    assert report['hardware'] == dict.fromkeys(('os', 'machine', 'processor', 'logical_cpus'))
+    assert report['network_transfer_seconds'] is None and report['key_rotation_seconds'] is None
     stages = report['runs'][0]['stages']
     assert stages['evaluate']['submission_thread_report']['compute_threads'] == 1
     assert stages['evaluate']['sampled_process_tree_peak_os_threads'] >= 1
@@ -99,6 +101,7 @@ def test_complete_pipeline(tmp_path, workload):
     table = (out / 'comparison.md').read_text(encoding='utf-8')
     assert 'ROC-AUC (primary)' in table and 'Reported evaluator compute threads' in table
     assert 'Memory sampling by stage' in table
+    assert '| CPU description | Not reported |' in table
 
 
 def test_mismatched_workload_rejected(tmp_path):

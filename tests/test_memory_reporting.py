@@ -50,13 +50,13 @@ def test_unavailable_sampling_keeps_stage_success(tmp_path, monkeypatch):
 def test_failed_run_table_shows_memory():
     m = dict(memory_sampling_summary(None, 0, 0, 0), process_lifetime_peak_rss_bytes=2**20)
     table = comparison_markdown(dict(runs=[], description_stage=m))
-    assert '| description_stage | unavailable | 0 | — | 1 |' in table
+    assert '| description_stage | unavailable | 0 | Not reported | 1 |' in table
 
 
 def test_legacy_zero_not_displayed_as_measured_zero():
     table = '\n'.join(memory_table({'keygen': {'sampled_process_tree_peak_rss_bytes': 0}}))
-    assert 'unavailable (legacy; coverage unknown)' in table
-    assert '| — | — | — |' in table
+    assert 'unavailable (legacy; coverage: Not reported)' in table
+    assert '| Not reported | Not reported | Not reported |' in table
 
 
 @pytest.mark.parametrize('workload', ['gcn', 'tam'])
@@ -91,4 +91,4 @@ def test_comparison_handles_all_memory_unavailable():
     for _, stage in stage_measurements(report):
         stage.update(memory_sampling_summary(None, 0, 0, 0))
         stage['process_lifetime_peak_rss_bytes'] = None
-    assert '| Peak stage RAM (MiB, maximum) | — | — |' in comparison_markdown(report)
+    assert '| Peak stage RAM (MiB, maximum) | Not reported | Not reported |' in comparison_markdown(report)

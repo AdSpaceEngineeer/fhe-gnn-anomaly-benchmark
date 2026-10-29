@@ -15,3 +15,7 @@ Only reports/tables are published, not private run directories.
 Memory-availability annotations were added without rerunning these historical
 checks. Positive recorded peaks are retained; sample counts and completeness are
 unknown. The reports retain their original execution-time source hashes.
+
+Markdown examples use the current formatter, including Not reported for missing
+values and an optional hardware summary. The historical JSON measurements and
+source hashes are unchanged; absent hardware details are not inferred.

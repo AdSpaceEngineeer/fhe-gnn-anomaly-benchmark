@@ -117,6 +117,8 @@ parameters and supporting evidence in the submission. SEAL-based contexts have
 built-in parameter/context checks; other schemes require evidence review.
 An automated check is not a cryptographic security certification. Hardware
 details are optional (`--include-hardware`); thread reporting is required.
+Missing report values display as **Not reported**, not zero; JSON retains `null`
+for unavailable values. The comparison table includes the optional hardware summary.
 
 Only the same registered workload/artifact version should be compared.
 Submission quality is reported even when numerical verification fails.

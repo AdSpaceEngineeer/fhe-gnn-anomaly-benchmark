@@ -36,11 +36,26 @@ def read_server_timings(directory):
 
 
 def _number(value):
-    return "—" if value is None else f"{value:.6g}"
+    return "Not reported" if value is None else f"{value:.6g}"
 
 
 def _escape(value):
     return str(value).replace("|", "\\|").replace("\n", " ").replace("\r", " ")
+
+
+def _text(value):
+    return "Not reported" if value is None or not str(value).strip() else _escape(value)
+
+
+def hardware_table(report):
+    hardware = report.get('hardware') or {}
+    return ['', 'Optional hardware information:', '',
+            '| Field | Reported value |', '|---|---|',
+            f"| Operating system | {_text(hardware.get('os'))} |",
+            f"| Architecture | {_text(hardware.get('machine'))} |",
+            f"| CPU description | {_text(hardware.get('processor'))} |",
+            f"| System logical CPUs | {_number(hardware.get('logical_cpus'))} |",
+            '', 'Hardware disclosure is optional. System logical CPUs are not a process allocation or configured compute-thread count.']
 
 
 def stage_measurements(report):
@@ -64,7 +79,7 @@ def memory_table(report):
         peak = peak if peak is not None and peak > 0 else None
         status = m.get('memory_sampling_status', 'available' if peak is not None else 'unavailable')
         if m.get('memory_sampling_provenance') == 'legacy_peak_only' or 'memory_sampling_status' not in m:
-            status += ' (legacy; coverage unknown)'
+            status += ' (legacy; coverage: Not reported)'
         high = m.get('process_lifetime_peak_rss_bytes')
         lines.append(f"| {_escape(name)} | {_escape(status)} | {_number(m.get('memory_samples_observed'))} | "
                      f"{_number(peak / 2**20 if peak is not None else None)} | "
@@ -76,12 +91,14 @@ def memory_table(report):
 
 def comparison_markdown(report):
     runs = report.get("runs", [])
-    name = _escape(report.get("submission", "unknown"))
+    name = _text(report.get("submission"))
     lines = ["# Benchmark comparison", "",
-             f"Submission: `{name}` · Workload: `{_escape(report.get('artifact_id', 'unknown'))}`",
-             f"Status: **{_escape(report.get('status', 'unknown'))}** · "
+             f"Submission: `{name}` · Workload: `{_text(report.get('artifact_id'))}`",
+             f"Status: **{_text(report.get('status'))}** · "
              f"Security: `{_escape(report.get('security', {}).get('status', 'not checked'))}` · "
-             f"Eligible FHE comparison: **{bool(report.get('eligible_for_comparison', False))}**", ""]
+             f"Eligible FHE comparison: **{_text(report.get('eligible_for_comparison'))}**"]
+    lines += hardware_table(report)
+    lines += ['', 'Missing values are shown as Not reported; genuine zero measurements remain 0.', '']
     if not runs:
         lines += ["No completed inference runs; no performance or quality comparison is available."]
         lines += memory_table(report)
@@ -102,7 +119,8 @@ def comparison_markdown(report):
     row("Reported evaluator compute threads", None,
         max(r['stages']['evaluate']['submission_thread_report']['compute_threads'] for r in runs))
     row("Sampled evaluator OS threads (peak)", None,
-        max(r['stages']['evaluate'].get('sampled_process_tree_peak_os_threads', 0) for r in runs))
+        max((r['stages']['evaluate']['sampled_process_tree_peak_os_threads'] for r in runs
+             if r['stages']['evaluate'].get('sampled_process_tree_peak_os_threads') is not None), default=None))
     row("Key generation (s, once)", None, report["keygen"]["wall_seconds"])
     for stage in ("encrypt", "evaluate", "decrypt"):
         row(f"{stage.capitalize()} wall time (s)", None, mean(r["stages"][stage]["wall_seconds"] for r in runs))
@@ -129,7 +147,7 @@ def comparison_markdown(report):
             values = [r["server_reported_steps"][name] for r in runs if name in (r.get("server_reported_steps") or {})]
             lines.append(f"| {_escape(name)} | {_number(mean(values))} | {len(values)}/{len(runs)} |")
     lines += ["", "Values are means across completed runs unless labelled otherwise. MiB = 2^20 bytes.",
-              "A dash means not measured, not zero. The frozen reference supplies quality, not matched plaintext timing.",
+              "The frozen reference supplies quality, not matched plaintext timing.",
               "Server-reported timings are additional detail; they never replace or subtract from harness wall times.",
               "Key/public-workload uploads are counted once and amortized; no network-transfer duration is measured."]
     if not report.get("description", {}).get("is_fhe", False):
